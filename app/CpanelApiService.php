@@ -8,9 +8,32 @@ final class CpanelApiService
     public function fetchServerStats(array $server): array
     {
         $baseUrl = rtrim((string) $server['host'], '/');
+        $type = (string) ($server['auth_type'] ?? 'whm');
 
-        $serverInfo = $this->request($baseUrl . '/execute/ServerInformation/get_information', $server);
-        $resourceInfo = $this->request($baseUrl . '/execute/ResourceUsage/get_usages', $server);
+        if ($type === 'cpanel') {
+            $serverInfo = $this->request($baseUrl . '/execute/ServerInformation/get_information', $server);
+            $resourceInfo = $this->request($baseUrl . '/execute/ResourceUsage/get_usages', $server);
+
+            return [
+                'cpu' => $this->extractCpu($serverInfo, $resourceInfo),
+                'ram' => $this->extractRam($serverInfo, $resourceInfo),
+                'disk' => $this->extractDisk($serverInfo, $resourceInfo),
+                'io' => $this->extractIo($serverInfo, $resourceInfo),
+                'raw' => ['server_info' => $serverInfo, 'resource_usage' => $resourceInfo],
+            ];
+        }
+
+        $serverInfo = $this->requestFirstSuccessful($server, [
+            $baseUrl . '/json-api/get_system_info?api.version=1',
+            $baseUrl . '/json-api/version?api.version=1',
+            $baseUrl . '/json-api/myprivs?api.version=1',
+        ]);
+
+        $resourceInfo = $this->requestFirstSuccessful($server, [
+            $baseUrl . '/json-api/loadavg?api.version=1',
+            $baseUrl . '/json-api/systemloadavg?api.version=1',
+            $baseUrl . '/json-api/getdiskusage?api.version=1',
+        ]);
 
         return [
             'cpu' => $this->extractCpu($serverInfo, $resourceInfo),
@@ -19,6 +42,25 @@ final class CpanelApiService
             'io' => $this->extractIo($serverInfo, $resourceInfo),
             'raw' => ['server_info' => $serverInfo, 'resource_usage' => $resourceInfo],
         ];
+    }
+
+    /**
+     * @param array<int,string> $urls
+     * @return array<string,mixed>
+     */
+    private function requestFirstSuccessful(array $server, array $urls): array
+    {
+        $lastError = 'No API endpoints configured.';
+
+        foreach ($urls as $url) {
+            try {
+                return $this->request($url, $server);
+            } catch (RuntimeException $e) {
+                $lastError = $e->getMessage();
+            }
+        }
+
+        throw new RuntimeException($lastError);
     }
 
     /** @return array<string,mixed> */
