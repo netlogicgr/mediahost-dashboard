@@ -514,6 +514,7 @@ function formatHistoryTime(timestamp) {
 
 function bindHistoryTooltips() {
     const charts = document.querySelectorAll('.history-chart');
+    const horizontalPadding = 8;
 
     charts.forEach((chart) => {
         const tooltip = chart.querySelector('.history-tooltip');
@@ -527,10 +528,21 @@ function bindHistoryTooltips() {
             point.addEventListener('mouseenter', () => {
                 const value = point.getAttribute('data-value') || 'N/A';
                 const time = point.getAttribute('data-time') || '';
+                const pointX = Number(point.getAttribute('cx'));
+                const pointY = Number(point.getAttribute('cy'));
 
                 tooltip.textContent = time ? `${time} • ${value}` : value;
-                tooltip.style.left = `${point.getAttribute('cx')}px`;
-                tooltip.style.top = `${Number(point.getAttribute('cy')) - 8}px`;
+
+                const chartWidth = chart.clientWidth;
+                const tooltipWidth = tooltip.offsetWidth;
+                const leftEdge = horizontalPadding;
+                const rightEdge = Math.max(leftEdge, chartWidth - tooltipWidth - horizontalPadding);
+                const centeredLeft = pointX - (tooltipWidth / 2);
+                const clampedLeft = Math.min(Math.max(centeredLeft, leftEdge), rightEdge);
+
+                tooltip.style.transform = 'translate(0, -100%)';
+                tooltip.style.left = `${clampedLeft}px`;
+                tooltip.style.top = `${pointY - 8}px`;
                 tooltip.classList.add('active');
             });
 
