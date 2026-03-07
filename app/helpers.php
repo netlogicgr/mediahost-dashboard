@@ -102,9 +102,34 @@ function e(string $value): string
 function session_start_safe(): void
 {
     if (session_status() !== PHP_SESSION_ACTIVE) {
+        $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+            || ((int) ($_SERVER['SERVER_PORT'] ?? 0) === 443);
+
+        session_set_cookie_params([
+            'lifetime' => 0,
+            'path' => '/',
+            'secure' => $isHttps,
+            'httponly' => true,
+            'samesite' => 'Strict',
+        ]);
         session_start();
     }
 }
+
+function apply_security_headers(): void
+{
+    if (headers_sent()) {
+        return;
+    }
+
+    header('X-Frame-Options: DENY');
+    header('X-Content-Type-Options: nosniff');
+    header('Referrer-Policy: strict-origin-when-cross-origin');
+    header('Permissions-Policy: geolocation=(), camera=(), microphone=()');
+    header("Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'self'");
+}
+
+apply_security_headers();
 
 function csrf_token(): string
 {

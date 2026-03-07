@@ -65,7 +65,7 @@ if (!is_installed()) {
         }
 
         .server-card .server-value {
-            font-size: clamp(1.6rem, calc(2.3rem * var(--card-scale)), 7.125rem);
+            font-size: clamp(1.6rem, calc(2.3rem * var(--card-scale)), 10.6875rem);
             line-height: 1.1;
         }
 
@@ -120,7 +120,6 @@ if (!is_installed()) {
     <div class="d-flex justify-content-end align-items-center mb-4">
         <a href="<?= e(public_url('admin/login.php')) ?>" class="btn btn-outline-primary btn-sm">Admin</a>
     </div>
-    <p class="text-muted mb-3">Auto refresh every 10 seconds.</p>
     <div id="alerts"></div>
     <div id="cards" class="row g-3 cards-grid"></div>
 </div>
@@ -146,7 +145,6 @@ async function loadStats() {
                     <div class="card shadow-sm h-100 server-card ${stateClass}">
                         <div class="card-body d-flex flex-column justify-content-center text-center">
                             <h5 class="card-title">${srv.name}</h5>
-                            <p class="text-muted server-host mb-0">${srv.host}</p>
                             <div class="text-muted server-label mb-0">CPU Load Average</div>
                             <div class="fw-bold mb-0 server-value">${formatLoadAverage(srv.metrics.cpu)}</div>
                             ${srv.error ? `<div class="alert alert-warning mb-0 server-error text-start">${srv.error}</div>` : ''}

@@ -15,14 +15,32 @@ if (Auth::check()) {
 
 $error = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $username = trim($_POST['username'] ?? '');
+    $ok = false;
+
     if (!csrf_validate($_POST['_csrf'] ?? null)) {
         $error = 'Invalid CSRF token.';
     } else {
-        $ok = Auth::attempt(trim($_POST['username'] ?? ''), (string) ($_POST['password'] ?? ''));
+        $lockoutSeconds = Auth::lockoutSecondsRemaining($username);
+
+        if ($lockoutSeconds > 0) {
+            $error = sprintf('Too many failed attempts. Try again in %d minute(s).', (int) ceil($lockoutSeconds / 60));
+        } else {
+            $ok = Auth::attempt($username, (string) ($_POST['password'] ?? ''));
+        }
+
         if ($ok) {
             redirect(public_url('admin/dashboard.php'));
         }
-        $error = 'Invalid credentials.';
+
+        if ($error === null) {
+            $remainingAfterFail = Auth::lockoutSecondsRemaining($username);
+            if ($remainingAfterFail > 0) {
+                $error = sprintf('Too many failed attempts. You are temporarily blocked for %d minute(s).', (int) ceil($remainingAfterFail / 60));
+            } else {
+                $error = 'Invalid credentials.';
+            }
+        }
     }
 }
 ?>
