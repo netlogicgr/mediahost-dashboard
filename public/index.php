@@ -106,12 +106,23 @@ endif;
             width: 100%;
             height: 100%;
             min-height: 0;
+            border-radius: clamp(0.65rem, calc(0.8rem * var(--card-scale)), 1.1rem);
+            overflow: hidden;
         }
 
         .server-card .card-body {
-            padding: clamp(0.5rem, calc(0.8rem * var(--card-scale)), 2rem);
-            gap: clamp(0.25rem, calc(0.4rem * var(--card-scale)), 0.75rem);
+            padding: 0;
+            gap: 0;
             overflow: hidden;
+            height: 100%;
+        }
+
+        .server-card .server-content {
+            padding: clamp(0.65rem, calc(0.9rem * var(--card-scale)), 2rem) clamp(0.8rem, calc(1rem * var(--card-scale)), 2.1rem) clamp(0.4rem, calc(0.55rem * var(--card-scale)), 1rem);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: clamp(0.25rem, calc(0.4rem * var(--card-scale)), 0.75rem);
         }
 
         .server-card .card-title {
@@ -139,21 +150,26 @@ endif;
         .server-card .server-value {
             font-size: clamp(2.4rem, calc(3.8rem * var(--card-scale)), 8.25rem);
             line-height: 1.1;
-            margin: clamp(0.15rem, calc(0.35rem * var(--card-scale)), 0.8rem) 0;
+            margin: clamp(0.15rem, calc(0.35rem * var(--card-scale)), 0.8rem) 0 0;
         }
 
         .server-card .server-error {
             max-width: 100%;
             overflow: hidden;
+            margin: 0;
+            font-size: clamp(0.65rem, calc(0.85rem * var(--card-scale)), 1.1rem);
+            padding: 0.45rem 0.6rem;
+            border-radius: 0.55rem;
         }
 
         .server-card .history-chart {
             width: 100%;
-            height: clamp(3.2rem, calc(3.4rem * var(--card-scale)), 5.4rem);
-            margin-top: clamp(0.15rem, calc(0.25rem * var(--card-scale)), 0.4rem);
-            border-radius: clamp(0.55rem, calc(0.7rem * var(--card-scale)), 0.9rem);
+            height: clamp(4.2rem, calc(4.6rem * var(--card-scale)), 6.4rem);
+            margin-top: auto;
+            border-radius: 0;
             overflow: hidden;
-            background: linear-gradient(180deg, rgba(66, 133, 244, 0.16) 0%, rgba(66, 133, 244, 0.03) 100%);
+            background: linear-gradient(180deg, rgba(15, 23, 42, 0.08) 0%, rgba(15, 23, 42, 0.16) 100%);
+            border-top: 1px solid rgba(15, 23, 42, 0.08);
         }
 
         .server-card .history-chart svg {
@@ -198,15 +214,19 @@ endif;
             }
 
             .server-card .card-body {
-                padding: 1.25rem;
+                min-height: 14.5rem;
             }
 
             .server-card .server-value {
                 font-size: clamp(3rem, 16vw, 4.5rem);
             }
 
+            .server-card .server-content {
+                padding: 1.25rem 1.25rem 0.7rem;
+            }
+
             .server-card .history-chart {
-                height: 3.5rem;
+                height: 4rem;
             }
         }
     </style>
@@ -244,13 +264,15 @@ async function loadStats() {
                 <div>
                     <div class="card shadow-sm h-100 server-card ${stateClass}">
                         <div class="card-body d-flex flex-column text-center">
-                            <div class="server-head">
-                                <h5 class="card-title">${srv.name}</h5>
-                                <div class="text-muted server-label mb-0">CPU Load Average</div>
+                            <div class="server-content">
+                                <div class="server-head">
+                                    <h5 class="card-title">${srv.name}</h5>
+                                    <div class="text-muted server-label mb-0">CPU Load Average</div>
+                                </div>
+                                <div class="fw-bold mb-0 server-value">${formatLoadAverage(srv.metrics.cpu)}</div>
+                                ${srv.error ? `<div class="alert alert-warning server-error text-start">${srv.error}</div>` : ''}
                             </div>
-                            <div class="fw-bold mb-0 server-value">${formatLoadAverage(srv.metrics.cpu)}</div>
                             <div class="history-chart">${historyChart}</div>
-                            ${srv.error ? `<div class="alert alert-warning mb-0 server-error text-start">${srv.error}</div>` : ''}
                         </div>
                     </div>
                 </div>`;
@@ -326,10 +348,10 @@ function renderHistoryChart(history) {
     }
 
     const width = 320;
-    const height = 92;
-    const paddingX = 10;
-    const topPadding = 10;
-    const bottomPadding = 10;
+    const height = 108;
+    const paddingX = 6;
+    const topPadding = 12;
+    const bottomPadding = 0;
     const baselineY = height - bottomPadding;
     const values = points.map((item) => Number(item.cpu));
     const rawMinValue = Math.min(...values);
@@ -357,32 +379,22 @@ function renderHistoryChart(history) {
         'Z'
     ].join(' ');
 
-    const lineColor = '#2f80ff';
-    const lineGlowColor = 'rgba(47, 128, 255, 0.28)';
-    const fillColor = '#2f80ff';
+    const lineColor = '#0f172a';
+    const fillColor = '#334155';
     const finalPoint = plottedPoints[plottedPoints.length - 1];
-    const finalValue = values[values.length - 1].toFixed(2);
     const gradientId = `historyFill-${Math.random().toString(36).slice(2, 9)}`;
-    const glowId = `historyGlow-${Math.random().toString(36).slice(2, 9)}`;
-    const valueTextX = Math.min(width - 8, Math.max(48, finalPoint.x - 8));
-    const valueTextY = Math.max(16, finalPoint.y - 10);
 
     return `
         <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" role="img" aria-label="CPU load history for last 5 minutes">
             <defs>
                 <linearGradient id="${gradientId}" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="${fillColor}" stop-opacity="0.4"></stop>
-                    <stop offset="100%" stop-color="${fillColor}" stop-opacity="0"></stop>
+                    <stop offset="0%" stop-color="${fillColor}" stop-opacity="0.22"></stop>
+                    <stop offset="100%" stop-color="${fillColor}" stop-opacity="0.03"></stop>
                 </linearGradient>
-                <filter id="${glowId}" x="-10%" y="-20%" width="120%" height="140%">
-                    <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="${lineGlowColor}"/>
-                </filter>
             </defs>
             <path d="${areaPath}" fill="url(#${gradientId})"></path>
-            <polyline filter="url(#${glowId})" fill="none" stroke="${lineColor}" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.8" points="${polyline}"></polyline>
-            <circle cx="${finalPoint.x.toFixed(2)}" cy="${finalPoint.y.toFixed(2)}" r="4.2" fill="white" fill-opacity="0.9"></circle>
-            <circle cx="${finalPoint.x.toFixed(2)}" cy="${finalPoint.y.toFixed(2)}" r="2.9" fill="${lineColor}"></circle>
-            <text x="${valueTextX.toFixed(2)}" y="${valueTextY.toFixed(2)}" text-anchor="end" fill="${lineColor}" font-size="11" font-weight="700">${finalValue}</text>
+            <polyline fill="none" stroke="${lineColor}" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" points="${polyline}"></polyline>
+            <circle cx="${finalPoint.x.toFixed(2)}" cy="${finalPoint.y.toFixed(2)}" r="2.4" fill="${lineColor}"></circle>
         </svg>
     `;
 }
