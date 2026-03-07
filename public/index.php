@@ -170,10 +170,10 @@ endif;
         .server-card .history-chart {
             position: relative;
             width: 100%;
-            height: clamp(4.2rem, calc(4.6rem * var(--card-scale)), 6.4rem);
+            height: clamp(5rem, calc(5.8rem * var(--card-scale)), 8rem);
             margin-top: 0;
             border-radius: 0;
-            overflow: hidden;
+            overflow: visible;
             background: transparent;
             border-top: 0;
         }
@@ -252,7 +252,7 @@ endif;
             }
 
             .server-card .history-chart {
-                height: 4rem;
+                height: 4.8rem;
             }
         }
     </style>
