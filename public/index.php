@@ -44,14 +44,12 @@ async function loadStats() {
             cards.innerHTML += `
                 <div class="col-md-6 col-lg-4">
                     <div class="card shadow-sm h-100">
-                        <div class="card-body">
+                        <div class="card-body d-flex flex-column justify-content-center text-center py-5">
                             <h5 class="card-title">${srv.name}</h5>
-                            <p class="text-muted small mb-3">${srv.host}</p>
-                            ${metric('CPU Usage', srv.metrics.cpu)}
-                            ${metric('RAM Usage', srv.metrics.ram)}
-                            ${metric('Disk Usage', srv.metrics.disk)}
-                            ${metric('I/O Usage', srv.metrics.io)}
-                            ${srv.error ? `<div class="alert alert-warning mt-3 mb-0 small">${srv.error}</div>` : ''}
+                            <p class="text-muted small mb-4">${srv.host}</p>
+                            <div class="text-muted small mb-2">CPU Load Average</div>
+                            <div class="display-4 fw-bold mb-0">${formatLoadAverage(srv.metrics.cpu)}</div>
+                            ${srv.error ? `<div class="alert alert-warning mt-4 mb-0 small text-start">${srv.error}</div>` : ''}
                         </div>
                     </div>
                 </div>`;
@@ -61,10 +59,12 @@ async function loadStats() {
     }
 }
 
-function metric(label, value) {
-    const display = value === null ? 'N/A' : `${value.toFixed(2)}%`;
-    const width = value === null ? 0 : Math.max(0, Math.min(100, value));
-    return `<div class="mb-2"><div class="d-flex justify-content-between"><small>${label}</small><small>${display}</small></div><div class="progress" style="height:8px"><div class="progress-bar" role="progressbar" style="width:${width}%"></div></div></div>`;
+function formatLoadAverage(value) {
+    if (value === null || value === undefined || Number.isNaN(value)) {
+        return 'N/A';
+    }
+
+    return Number(value).toFixed(2);
 }
 
 loadStats();
