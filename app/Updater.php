@@ -12,19 +12,45 @@ final class Updater
             throw new InvalidArgumentException('Invalid ZIP URL.');
         }
 
+        $zipData = file_get_contents($zipUrl);
+        if ($zipData === false) {
+            throw new RuntimeException('Could not download update ZIP.');
+        }
+
+        return $this->updateFromZipData($zipData);
+    }
+
+    public function updateFromUploadedZip(array $uploadedFile): string
+    {
+        if (($uploadedFile['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+            throw new RuntimeException('Upload failed.');
+        }
+
+        $tmpName = (string) ($uploadedFile['tmp_name'] ?? '');
+        if ($tmpName === '' || !is_uploaded_file($tmpName)) {
+            throw new RuntimeException('Invalid uploaded file.');
+        }
+
+        $zipData = file_get_contents($tmpName);
+        if ($zipData === false) {
+            throw new RuntimeException('Could not read uploaded ZIP file.');
+        }
+
+        return $this->updateFromZipData($zipData);
+    }
+
+    private function updateFromZipData(string $zipData): string
+    {
         $tmpDir = storage_path('tmp');
         if (!is_dir($tmpDir)) {
             mkdir($tmpDir, 0775, true);
         }
 
-        $zipPath = $tmpDir . '/update_' . time() . '.zip';
-        $zipData = file_get_contents($zipUrl);
-        if ($zipData === false) {
-            throw new RuntimeException('Could not download update ZIP.');
-        }
+        $token = (string) time() . '_' . bin2hex(random_bytes(4));
+        $zipPath = $tmpDir . '/update_' . $token . '.zip';
         file_put_contents($zipPath, $zipData);
 
-        $extractPath = $tmpDir . '/extract_' . time();
+        $extractPath = $tmpDir . '/extract_' . $token;
         mkdir($extractPath, 0775, true);
 
         $zip = new ZipArchive();
@@ -37,6 +63,7 @@ final class Updater
 
         $sourceRoot = $this->detectRoot($extractPath);
         $this->copyRecursive($sourceRoot, dirname(__DIR__));
+        $this->removeSensitiveInstallFiles(dirname(__DIR__));
 
         return 'Update installed successfully.';
     }
@@ -78,6 +105,21 @@ final class Updater
             }
 
             copy($item->getPathname(), $targetPath);
+        }
+    }
+
+    private function removeSensitiveInstallFiles(string $projectRoot): void
+    {
+        $filesToDelete = [
+            'public/install.php',
+            'README.md',
+        ];
+
+        foreach ($filesToDelete as $relativePath) {
+            $path = $projectRoot . '/' . $relativePath;
+            if (is_file($path)) {
+                unlink($path);
+            }
         }
     }
 

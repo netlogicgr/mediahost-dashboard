@@ -67,6 +67,33 @@ function redirect(string $url): void
     exit;
 }
 
+function public_base_path(): string
+{
+    $scriptName = (string) ($_SERVER['SCRIPT_NAME'] ?? '');
+
+    $publicPos = strpos($scriptName, '/public/');
+    if ($publicPos !== false) {
+        return rtrim(substr($scriptName, 0, $publicPos + 7), '/');
+    }
+
+    if (str_ends_with($scriptName, '/public')) {
+        return rtrim($scriptName, '/');
+    }
+
+    return '';
+}
+
+function public_url(string $path = ''): string
+{
+    $base = public_base_path();
+    if ($path === '') {
+        return $base !== '' ? $base : '/';
+    }
+
+    $cleanPath = ltrim($path, '/');
+    return ($base !== '' ? $base : '') . '/' . $cleanPath;
+}
+
 function e(string $value): string
 {
     return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');

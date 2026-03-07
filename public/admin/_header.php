@@ -6,7 +6,7 @@ require_once dirname(__DIR__, 2) . '/app/helpers.php';
 require_once dirname(__DIR__, 2) . '/app/Auth.php';
 
 if (!is_installed()) {
-    redirect('/install.php');
+    redirect(public_url('install.php'));
 }
 
 Auth::requireLogin();
@@ -22,12 +22,12 @@ Auth::requireLogin();
 <body class="bg-light">
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
     <div class="container">
-        <a class="navbar-brand" href="/admin/dashboard.php">MediaHost Dashboard</a>
+        <a class="navbar-brand" href="<?= e(public_url('admin/dashboard.php')) ?>">MediaHost Dashboard</a>
         <div class="navbar-nav">
-            <a class="nav-link" href="/admin/dashboard.php">Dashboard</a>
-            <a class="nav-link" href="/admin/servers.php">Servers</a>
-            <a class="nav-link" href="/admin/updates.php">Updates</a>
-            <a class="nav-link" href="/admin/logout.php">Logout</a>
+            <a class="nav-link" href="<?= e(public_url('admin/dashboard.php')) ?>">Dashboard</a>
+            <a class="nav-link" href="<?= e(public_url('admin/servers.php')) ?>">Servers</a>
+            <a class="nav-link" href="<?= e(public_url('admin/updates.php')) ?>">Updates</a>
+            <a class="nav-link" href="<?= e(public_url('admin/logout.php')) ?>">Logout</a>
         </div>
     </div>
 </nav>

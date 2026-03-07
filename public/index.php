@@ -5,7 +5,7 @@ declare(strict_types=1);
 require_once dirname(__DIR__) . '/app/helpers.php';
 
 if (!is_installed()) {
-    redirect('/install.php');
+    redirect(public_url('install.php'));
 }
 ?>
 <!doctype html>
@@ -20,7 +20,7 @@ if (!is_installed()) {
 <div class="container py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 mb-0">Public Server Metrics</h1>
-        <a href="/admin/login.php" class="btn btn-outline-primary btn-sm">Admin</a>
+        <a href="<?= e(public_url('admin/login.php')) ?>" class="btn btn-outline-primary btn-sm">Admin</a>
     </div>
     <p class="text-muted">Auto refresh every 10 seconds.</p>
     <div id="alerts"></div>
@@ -29,7 +29,7 @@ if (!is_installed()) {
 <script>
 async function loadStats() {
     try {
-        const res = await fetch('/api/stats.php');
+        const res = await fetch('<?= e(public_url('api/stats.php')) ?>');
         const data = await res.json();
 
         const cards = document.getElementById('cards');

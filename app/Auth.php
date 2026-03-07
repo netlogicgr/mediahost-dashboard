@@ -32,7 +32,7 @@ final class Auth
     public static function requireLogin(): void
     {
         if (!self::check()) {
-            redirect('/admin/login.php');
+            redirect(public_url('admin/login.php'));
         }
     }
 

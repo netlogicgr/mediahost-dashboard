@@ -10,7 +10,7 @@ PHP/MySQL dashboard that connects to multiple cPanel/WHM servers and shows **CPU
   - Login/logout
   - Add/remove servers (host + auth type + username + API token)
   - Dashboard overview
-  - App updater from GitHub ZIP URL
+  - App updater from GitHub ZIP URL or direct ZIP upload
 - Metrics endpoint (`/api/stats.php`) stores snapshots in MySQL (`server_stats`).
 
 ## Requirements
@@ -28,6 +28,8 @@ PHP/MySQL dashboard that connects to multiple cPanel/WHM servers and shows **CPU
 5. Login via `/admin/login.php`.
 6. Add servers in `/admin/servers.php`.
 
+> If your app is served from a subfolder (for example `https://domain.com/public/`), links and API calls are auto-detected so the public page can still reach `api/stats.php` without 404 errors.
+
 ## cPanel/WHM API Notes
 
 - For WHM token auth, use host like `https://YOUR_SERVER:2087`, auth type `WHM`, username usually `root`.
@@ -41,3 +43,9 @@ php -S 0.0.0.0:8000 -t public
 ```
 
 Then open `http://localhost:8000`.
+
+
+## Update behavior
+
+- You can update from **Admin → Updates** using either a ZIP URL or a ZIP file upload.
+- After update copy completes, sensitive bootstrap files are removed automatically (`public/install.php`, `README.md`).

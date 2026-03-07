@@ -6,11 +6,11 @@ require_once dirname(__DIR__, 2) . '/app/helpers.php';
 require_once dirname(__DIR__, 2) . '/app/Auth.php';
 
 if (!is_installed()) {
-    redirect('/install.php');
+    redirect(public_url('install.php'));
 }
 
 if (Auth::check()) {
-    redirect('/admin/dashboard.php');
+    redirect(public_url('admin/dashboard.php'));
 }
 
 $error = null;
@@ -20,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $ok = Auth::attempt(trim($_POST['username'] ?? ''), (string) ($_POST['password'] ?? ''));
         if ($ok) {
-            redirect('/admin/dashboard.php');
+            redirect(public_url('admin/dashboard.php'));
         }
         $error = 'Invalid credentials.';
     }
