@@ -29,19 +29,38 @@ final class CpanelApiService
             $baseUrl . '/json-api/myprivs?api.version=1',
         ]);
 
-        $resourceInfo = $this->requestFirstSuccessful($server, [
-            $baseUrl . '/json-api/loadavg?api.version=1',
-            $baseUrl . '/json-api/systemloadavg?api.version=1',
-            $baseUrl . '/json-api/getdiskusage?api.version=1',
-        ]);
+        $whmResponses = $this->fetchWhmResponses($baseUrl, $server);
+        $resourceInfo = [
+            'systemloadavg' => $whmResponses['systemloadavg'] ?? [],
+            'get_disk_usage' => $whmResponses['get_disk_usage'] ?? [],
+            'servicestatus' => $whmResponses['servicestatus'] ?? [],
+        ];
 
         return [
-            'cpu' => $this->extractCpu($serverInfo, $resourceInfo),
+            'cpu' => $this->extractWhmCpu($resourceInfo) ?? $this->extractCpu($serverInfo, $resourceInfo),
             'ram' => $this->extractRam($serverInfo, $resourceInfo),
-            'disk' => $this->extractDisk($serverInfo, $resourceInfo),
-            'io' => $this->extractIo($serverInfo, $resourceInfo),
-            'raw' => ['server_info' => $serverInfo, 'resource_usage' => $resourceInfo],
+            'disk' => $this->extractWhmDisk($resourceInfo) ?? $this->extractDisk($serverInfo, $resourceInfo),
+            'io' => $this->extractWhmIo($resourceInfo) ?? $this->extractIo($serverInfo, $resourceInfo),
+            'raw' => ['server_info' => $serverInfo, 'resource_usage' => $resourceInfo, 'whm' => $whmResponses],
         ];
+    }
+
+    /** @return array<string,array<string,mixed>> */
+    private function fetchWhmResponses(string $baseUrl, array $server): array
+    {
+        $responses = [];
+        $endpoints = [
+            'systemloadavg' => '/json-api/systemloadavg?api.version=1',
+            'get_disk_usage' => '/json-api/get_disk_usage?api.version=1',
+            'servicestatus' => '/json-api/servicestatus?api.version=1',
+            'version' => '/json-api/version?api.version=1',
+        ];
+
+        foreach ($endpoints as $key => $path) {
+            $responses[$key] = $this->request($baseUrl . $path, $server);
+        }
+
+        return $responses;
     }
 
     /**
@@ -87,6 +106,8 @@ final class CpanelApiService
             throw new RuntimeException('API request failed: ' . ($error ?: 'HTTP ' . $code));
         }
 
+        error_log(sprintf('WHM API raw response [%s]: %s', $url, (string) $raw));
+
         $decoded = json_decode($raw, true);
         if (!is_array($decoded)) {
             throw new RuntimeException('Invalid API response.');
@@ -130,6 +151,88 @@ final class CpanelApiService
     private function extractIo(array $serverInfo, array $resourceInfo): ?float
     {
         return $this->findNumericValue(['io_usage', 'io_percent', 'iops', 'io_wait'], [$resourceInfo, $serverInfo]);
+    }
+
+    private function extractWhmCpu(array $resourceInfo): ?float
+    {
+        $loads = $this->findNumericValuesByKeyContains($resourceInfo['systemloadavg'] ?? [], ['one', '1min', 'loadavg']);
+        return $loads[0] ?? null;
+    }
+
+    private function extractWhmDisk(array $resourceInfo): ?float
+    {
+        $diskPayload = $resourceInfo['get_disk_usage'] ?? [];
+        $flat = $this->flatten($diskPayload);
+
+        $used = null;
+        $total = null;
+
+        foreach ($flat as $key => $value) {
+            $number = $this->toFloat($value);
+            if ($number === null) {
+                continue;
+            }
+
+            if ($used === null && stripos($key, 'used') !== false) {
+                $used = $number;
+            }
+
+            if ($total === null && (stripos($key, 'total') !== false || stripos($key, 'size') !== false || stripos($key, 'capacity') !== false)) {
+                $total = $number;
+            }
+
+            if (stripos($key, 'percent') !== false) {
+                return $number;
+            }
+        }
+
+        if ($used !== null && $total !== null && $total > 0) {
+            return ($used / $total) * 100;
+        }
+
+        return null;
+    }
+
+    private function extractWhmIo(array $resourceInfo): ?float
+    {
+        $services = $this->findNumericValuesByKeyContains($resourceInfo['servicestatus'] ?? [], ['running', 'active']);
+        if ($services === []) {
+            return null;
+        }
+
+        $running = 0;
+        foreach ($services as $value) {
+            if ($value > 0) {
+                $running++;
+            }
+        }
+
+        return (float) (($running / count($services)) * 100);
+    }
+
+    /**
+     * @param array<string,mixed> $source
+     * @param array<int,string> $needles
+     * @return array<int,float>
+     */
+    private function findNumericValuesByKeyContains(array $source, array $needles): array
+    {
+        $values = [];
+        foreach ($this->flatten($source) as $key => $value) {
+            foreach ($needles as $needle) {
+                if (stripos($key, $needle) === false) {
+                    continue;
+                }
+
+                $number = $this->toFloat($value);
+                if ($number !== null) {
+                    $values[] = $number;
+                }
+                break;
+            }
+        }
+
+        return $values;
     }
 
     /** @param array<int,array<string,mixed>> $sources */
