@@ -332,7 +332,7 @@ function getLoadStateClass(value) {
         return '';
     }
 
-    if (parsedValue > 18) {
+    if (parsedValue >= 18) {
         return 'bg-danger-subtle border-danger-subtle';
     }
 
@@ -379,10 +379,58 @@ function renderHistoryChart(history) {
             return { x, y };
         });
 
+    const createSegment = (start, end) => {
+        const parts = [];
+        const startHigh = start.value >= highLoadThreshold;
+        const endHigh = end.value >= highLoadThreshold;
+
+        if (startHigh === endHigh) {
+            parts.push({ start, end, high: startHigh });
+            return parts;
+        }
+
+        const delta = end.value - start.value;
+        if (delta === 0) {
+            parts.push({ start, end, high: startHigh });
+            return parts;
+        }
+
+        const ratio = (highLoadThreshold - start.value) / delta;
+        const crossingX = start.x + ((end.x - start.x) * ratio);
+        const crossingY = start.y + ((end.y - start.y) * ratio);
+        const crossingPoint = {
+            x: crossingX,
+            y: crossingY,
+            value: highLoadThreshold,
+        };
+
+        parts.push({ start, end: crossingPoint, high: startHigh });
+        parts.push({ start: crossingPoint, end, high: endHigh });
+
+        return parts;
+    };
+
+    const segments = [];
+    plottedPoints.forEach((point, index) => {
+        if (index === 0) {
+            return;
+        }
+
+        const prevPoint = plottedPoints[index - 1];
+        const start = { ...prevPoint, value: Number(points[index - 1].cpu) };
+        const end = { ...point, value: Number(points[index].cpu) };
+        segments.push(...createSegment(start, end));
+    });
+
+    const redPath = segments
+        .filter((segment) => segment.high)
+        .map((segment) => `M ${segment.start.x.toFixed(2)} ${segment.start.y.toFixed(2)} L ${segment.end.x.toFixed(2)} ${segment.end.y.toFixed(2)}`)
+        .join(' ');
+
     const latestLoad = Number(points[points.length - 1].cpu);
-    const isHighLoad = latestLoad > highLoadThreshold;
-    const startColor = isHighLoad ? '#fca5a5' : '#86efac';
-    const endColor = isHighLoad ? '#dc2626' : '#16a34a';
+    const isHighLoad = latestLoad >= highLoadThreshold;
+    const baseColor = '#16a34a';
+    const alertColor = '#dc2626';
     const finalPoint = plottedPoints[plottedPoints.length - 1];
     const smoothPath = plottedPoints
         .map((point, index, allPoints) => {
@@ -401,13 +449,14 @@ function renderHistoryChart(history) {
         <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" role="img" aria-label="CPU load history for last 5 minutes">
             <defs>
                 <linearGradient id="history-gradient" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0%" stop-color="${startColor}"></stop>
-                    <stop offset="100%" stop-color="${endColor}"></stop>
+                    <stop offset="0%" stop-color="#86efac"></stop>
+                    <stop offset="100%" stop-color="${baseColor}"></stop>
                 </linearGradient>
             </defs>
             <path d="${smoothPath}" fill="none" stroke="url(#history-gradient)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9"></path>
-            <circle cx="${finalPoint.x.toFixed(2)}" cy="${finalPoint.y.toFixed(2)}" r="3.2" fill="${endColor}" opacity="0.2"></circle>
-            <circle cx="${finalPoint.x.toFixed(2)}" cy="${finalPoint.y.toFixed(2)}" r="1.9" fill="${endColor}"></circle>
+            ${redPath ? `<path d="${redPath}" fill="none" stroke="${alertColor}" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9"></path>` : ''}
+            <circle cx="${finalPoint.x.toFixed(2)}" cy="${finalPoint.y.toFixed(2)}" r="3.2" fill="${isHighLoad ? alertColor : baseColor}" opacity="0.2"></circle>
+            <circle cx="${finalPoint.x.toFixed(2)}" cy="${finalPoint.y.toFixed(2)}" r="1.9" fill="${isHighLoad ? alertColor : baseColor}"></circle>
         </svg>
     `;
 }
