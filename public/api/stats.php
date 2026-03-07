@@ -30,6 +30,7 @@ foreach ($servers as $server) {
         'name' => $server['name'],
         'host' => $server['host'],
         'metrics' => ['cpu' => null],
+        'history' => [],
         'error' => null,
     ];
 
@@ -49,11 +50,23 @@ foreach ($servers as $server) {
             'io' => null,
         ]);
 
-        $deleteOld = $pdo->prepare('DELETE FROM server_stats WHERE server_id = :server_id AND id <> :latest_id');
+        $deleteOld = $pdo->prepare('DELETE FROM server_stats WHERE server_id = :server_id AND fetched_at < (NOW() - INTERVAL 5 MINUTE)');
         $deleteOld->execute([
             'server_id' => $server['id'],
-            'latest_id' => (int) $pdo->lastInsertId(),
         ]);
+
+        $historyStmt = $pdo->prepare('SELECT cpu_usage, fetched_at FROM server_stats WHERE server_id = :server_id AND fetched_at >= (NOW() - INTERVAL 5 MINUTE) ORDER BY fetched_at ASC');
+        $historyStmt->execute(['server_id' => $server['id']]);
+
+        $history = [];
+        foreach ($historyStmt->fetchAll() as $historyRow) {
+            $history[] = [
+                'cpu' => $historyRow['cpu_usage'] !== null ? (float) $historyRow['cpu_usage'] : null,
+                'at' => $historyRow['fetched_at'],
+            ];
+        }
+
+        $row['history'] = $history;
     } catch (Throwable $e) {
         $row['error'] = $e->getMessage();
     }
