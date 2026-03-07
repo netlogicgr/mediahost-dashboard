@@ -324,8 +324,9 @@ function renderHistoryChart(history) {
 
     const width = 320;
     const height = 90;
-    const paddingX = 10;
-    const paddingY = 12;
+    const paddingX = 0;
+    const paddingY = 8;
+    const baselineY = height;
     const values = points.map((item) => Number(item.cpu));
     const maxValue = Math.max(...values, 1);
     const minValue = Math.min(...values, 0);
@@ -340,29 +341,31 @@ function renderHistoryChart(history) {
 
     const polyline = plottedPoints.map((point) => `${point.x.toFixed(2)},${point.y.toFixed(2)}`).join(' ');
     const areaPath = [
-        `M ${plottedPoints[0].x.toFixed(2)} ${height - paddingY}`,
+        `M ${plottedPoints[0].x.toFixed(2)} ${baselineY}`,
         ...plottedPoints.map((point) => `L ${point.x.toFixed(2)} ${point.y.toFixed(2)}`),
-        `L ${plottedPoints[plottedPoints.length - 1].x.toFixed(2)} ${height - paddingY}`,
+        `L ${plottedPoints[plottedPoints.length - 1].x.toFixed(2)} ${baselineY}`,
         'Z'
     ].join(' ');
 
-    const latestPoint = plottedPoints[plottedPoints.length - 1];
-    const previousPoint = plottedPoints[plottedPoints.length - 2];
-    const trendUp = latestPoint.y < previousPoint.y;
-    const lineColor = trendUp ? 'rgba(25,135,84,0.95)' : 'rgba(13,110,253,0.95)';
+    const lineColor = '#30c5ff';
+    const fillColor = '#30c5ff';
+    const gridColor = 'rgba(0,0,0,0.08)';
+    const horizontalGrid = [20, 40, 60, 80];
+    const verticalGridCount = 5;
+    const verticalGrid = Array.from({ length: verticalGridCount }, (_, i) => Math.round((i * width) / (verticalGridCount - 1)));
 
     return `
         <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" role="img" aria-label="CPU load history for last 5 minutes">
+            ${horizontalGrid.map((y) => `<line x1="0" y1="${y}" x2="${width}" y2="${y}" stroke="${gridColor}" stroke-width="1"></line>`).join('')}
+            ${verticalGrid.map((x) => `<line x1="${x}" y1="0" x2="${x}" y2="${height}" stroke="${gridColor}" stroke-width="1"></line>`).join('')}
             <defs>
                 <linearGradient id="historyFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="${lineColor}" stop-opacity="0.22"></stop>
-                    <stop offset="100%" stop-color="${lineColor}" stop-opacity="0"></stop>
+                    <stop offset="0%" stop-color="${fillColor}" stop-opacity="0.24"></stop>
+                    <stop offset="100%" stop-color="${fillColor}" stop-opacity="0.24"></stop>
                 </linearGradient>
             </defs>
-            <line x1="${paddingX}" y1="${height - paddingY}" x2="${width - paddingX}" y2="${height - paddingY}" stroke="rgba(108,117,125,0.25)" stroke-width="1"></line>
             <path d="${areaPath}" fill="url(#historyFill)"></path>
-            <polyline fill="none" stroke="${lineColor}" stroke-linecap="round" stroke-linejoin="round" stroke-width="3" points="${polyline}"></polyline>
-            <circle cx="${latestPoint.x.toFixed(2)}" cy="${latestPoint.y.toFixed(2)}" r="3.5" fill="${lineColor}"></circle>
+            <polyline fill="none" stroke="${lineColor}" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" points="${polyline}"></polyline>
         </svg>
     `;
 }
