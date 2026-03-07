@@ -65,7 +65,7 @@ if (!is_installed()) {
         }
 
         .server-card .server-value {
-            font-size: clamp(1.6rem, calc(2.3rem * var(--card-scale)), 10.6875rem);
+            font-size: clamp(2.4rem, calc(3.45rem * var(--card-scale)), 16.03125rem);
             line-height: 1.1;
         }
 
