@@ -327,13 +327,19 @@ function renderHistoryChart(history) {
 
     const width = 320;
     const height = 92;
-    const paddingX = 0;
-    const topPadding = 8;
-    const bottomPadding = 5;
-    const baselineY = height;
+    const paddingX = 10;
+    const topPadding = 10;
+    const bottomPadding = 10;
+    const baselineY = height - bottomPadding;
     const values = points.map((item) => Number(item.cpu));
-    const maxValue = Math.max(...values, 1);
-    const minValue = Math.min(...values, 0);
+    const rawMinValue = Math.min(...values);
+    const rawMaxValue = Math.max(...values);
+    const rawRange = rawMaxValue - rawMinValue;
+    const minVisibleRange = Math.max(rawMaxValue * 0.08, 0.4);
+    const paddedRange = Math.max(rawRange, minVisibleRange);
+    const rangePadding = paddedRange * 0.16;
+    const minValue = rawMinValue - rangePadding;
+    const maxValue = rawMaxValue + rangePadding;
     const range = maxValue - minValue || 1;
 
     const plottedPoints = points
@@ -356,23 +362,27 @@ function renderHistoryChart(history) {
     const fillColor = '#2f80ff';
     const finalPoint = plottedPoints[plottedPoints.length - 1];
     const finalValue = values[values.length - 1].toFixed(2);
+    const gradientId = `historyFill-${Math.random().toString(36).slice(2, 9)}`;
+    const glowId = `historyGlow-${Math.random().toString(36).slice(2, 9)}`;
+    const valueTextX = Math.min(width - 8, Math.max(48, finalPoint.x - 8));
+    const valueTextY = Math.max(16, finalPoint.y - 10);
 
     return `
         <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" role="img" aria-label="CPU load history for last 5 minutes">
             <defs>
-                <linearGradient id="historyFill" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id="${gradientId}" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stop-color="${fillColor}" stop-opacity="0.4"></stop>
                     <stop offset="100%" stop-color="${fillColor}" stop-opacity="0"></stop>
                 </linearGradient>
-                <filter id="historyGlow" x="-10%" y="-20%" width="120%" height="140%">
+                <filter id="${glowId}" x="-10%" y="-20%" width="120%" height="140%">
                     <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="${lineGlowColor}"/>
                 </filter>
             </defs>
-            <path d="${areaPath}" fill="url(#historyFill)"></path>
-            <polyline filter="url(#historyGlow)" fill="none" stroke="${lineColor}" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.8" points="${polyline}"></polyline>
+            <path d="${areaPath}" fill="url(#${gradientId})"></path>
+            <polyline filter="url(#${glowId})" fill="none" stroke="${lineColor}" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.8" points="${polyline}"></polyline>
             <circle cx="${finalPoint.x.toFixed(2)}" cy="${finalPoint.y.toFixed(2)}" r="4.2" fill="white" fill-opacity="0.9"></circle>
             <circle cx="${finalPoint.x.toFixed(2)}" cy="${finalPoint.y.toFixed(2)}" r="2.9" fill="${lineColor}"></circle>
-            <text x="${Math.max(8, finalPoint.x - 6).toFixed(2)}" y="${Math.max(16, finalPoint.y - 10).toFixed(2)}" text-anchor="end" fill="${lineColor}" font-size="11" font-weight="700">${finalValue}</text>
+            <text x="${valueTextX.toFixed(2)}" y="${valueTextY.toFixed(2)}" text-anchor="end" fill="${lineColor}" font-size="11" font-weight="700">${finalValue}</text>
         </svg>
     `;
 }
