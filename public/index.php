@@ -111,11 +111,23 @@ endif;
         .server-card .card-body {
             padding: clamp(0.5rem, calc(0.8rem * var(--card-scale)), 2rem);
             gap: clamp(0.25rem, calc(0.4rem * var(--card-scale)), 0.75rem);
+            overflow: hidden;
         }
 
         .server-card .card-title {
-            font-size: clamp(1rem, calc(1.15rem * var(--card-scale)), 2.2rem);
+            font-size: clamp(0.9rem, calc(1rem * var(--card-scale)), 1.6rem);
             margin-bottom: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .server-card .server-head {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: clamp(0.05rem, calc(0.15rem * var(--card-scale)), 0.3rem);
+            min-height: 0;
         }
 
         .server-card .server-host,
@@ -125,8 +137,9 @@ endif;
         }
 
         .server-card .server-value {
-            font-size: clamp(3.6rem, calc(5.175rem * var(--card-scale)), 24.046875rem);
+            font-size: clamp(2.4rem, calc(3.8rem * var(--card-scale)), 8.25rem);
             line-height: 1.1;
+            margin: clamp(0.15rem, calc(0.35rem * var(--card-scale)), 0.8rem) 0;
         }
 
         .server-card .server-error {
@@ -136,8 +149,8 @@ endif;
 
         .server-card .history-chart {
             width: 100%;
-            height: clamp(3rem, calc(4rem * var(--card-scale)), 7rem);
-            margin-top: clamp(0.3rem, calc(0.4rem * var(--card-scale)), 0.8rem);
+            height: clamp(2.8rem, calc(3rem * var(--card-scale)), 5rem);
+            margin-top: clamp(0.15rem, calc(0.3rem * var(--card-scale)), 0.5rem);
         }
 
         .server-card .history-chart svg {
@@ -184,6 +197,14 @@ endif;
             .server-card .card-body {
                 padding: 1.25rem;
             }
+
+            .server-card .server-value {
+                font-size: clamp(3rem, 16vw, 4.5rem);
+            }
+
+            .server-card .history-chart {
+                height: 3.5rem;
+            }
         }
     </style>
 </head>
@@ -219,11 +240,13 @@ async function loadStats() {
             cards.innerHTML += `
                 <div>
                     <div class="card shadow-sm h-100 server-card ${stateClass}">
-                        <div class="card-body d-flex flex-column justify-content-center text-center">
-                            <div class="text-muted server-label mb-0">CPU Load Average</div>
+                        <div class="card-body d-flex flex-column justify-content-between text-center">
+                            <div class="server-head">
+                                <h5 class="card-title">${srv.name}</h5>
+                                <div class="text-muted server-label mb-0">CPU Load Average</div>
+                            </div>
                             <div class="fw-bold mb-0 server-value">${formatLoadAverage(srv.metrics.cpu)}</div>
                             <div class="history-chart">${historyChart}</div>
-                            <h5 class="card-title">${srv.name}</h5>
                             ${srv.error ? `<div class="alert alert-warning mb-0 server-error text-start">${srv.error}</div>` : ''}
                         </div>
                     </div>
@@ -301,24 +324,45 @@ function renderHistoryChart(history) {
 
     const width = 320;
     const height = 90;
-    const padding = 8;
+    const paddingX = 10;
+    const paddingY = 12;
     const values = points.map((item) => Number(item.cpu));
     const maxValue = Math.max(...values, 1);
     const minValue = Math.min(...values, 0);
     const range = maxValue - minValue || 1;
 
-    const polyline = points
+    const plottedPoints = points
         .map((item, index) => {
-            const x = padding + (index * (width - padding * 2)) / (points.length - 1);
-            const y = padding + (height - padding * 2) * (1 - ((Number(item.cpu) - minValue) / range));
-            return `${x.toFixed(2)},${y.toFixed(2)}`;
-        })
-        .join(' ');
+            const x = paddingX + (index * (width - paddingX * 2)) / (points.length - 1);
+            const y = paddingY + (height - paddingY * 2) * (1 - ((Number(item.cpu) - minValue) / range));
+            return { x, y };
+        });
+
+    const polyline = plottedPoints.map((point) => `${point.x.toFixed(2)},${point.y.toFixed(2)}`).join(' ');
+    const areaPath = [
+        `M ${plottedPoints[0].x.toFixed(2)} ${height - paddingY}`,
+        ...plottedPoints.map((point) => `L ${point.x.toFixed(2)} ${point.y.toFixed(2)}`),
+        `L ${plottedPoints[plottedPoints.length - 1].x.toFixed(2)} ${height - paddingY}`,
+        'Z'
+    ].join(' ');
+
+    const latestPoint = plottedPoints[plottedPoints.length - 1];
+    const previousPoint = plottedPoints[plottedPoints.length - 2];
+    const trendUp = latestPoint.y < previousPoint.y;
+    const lineColor = trendUp ? 'rgba(25,135,84,0.95)' : 'rgba(13,110,253,0.95)';
 
     return `
         <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" role="img" aria-label="CPU load history for last 5 minutes">
-            <rect x="0" y="0" width="${width}" height="${height}" fill="rgba(13,110,253,0.06)"></rect>
-            <polyline fill="none" stroke="rgba(13,110,253,0.85)" stroke-width="3" points="${polyline}"></polyline>
+            <defs>
+                <linearGradient id="historyFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="${lineColor}" stop-opacity="0.22"></stop>
+                    <stop offset="100%" stop-color="${lineColor}" stop-opacity="0"></stop>
+                </linearGradient>
+            </defs>
+            <line x1="${paddingX}" y1="${height - paddingY}" x2="${width - paddingX}" y2="${height - paddingY}" stroke="rgba(108,117,125,0.25)" stroke-width="1"></line>
+            <path d="${areaPath}" fill="url(#historyFill)"></path>
+            <polyline fill="none" stroke="${lineColor}" stroke-linecap="round" stroke-linejoin="round" stroke-width="3" points="${polyline}"></polyline>
+            <circle cx="${latestPoint.x.toFixed(2)}" cy="${latestPoint.y.toFixed(2)}" r="3.5" fill="${lineColor}"></circle>
         </svg>
     `;
 }
