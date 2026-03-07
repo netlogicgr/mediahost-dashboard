@@ -125,7 +125,7 @@ endif;
         }
 
         .server-card .server-value {
-            font-size: clamp(2.4rem, calc(3.45rem * var(--card-scale)), 16.03125rem);
+            font-size: clamp(3.6rem, calc(5.175rem * var(--card-scale)), 24.046875rem);
             line-height: 1.1;
         }
 
@@ -207,9 +207,9 @@ async function loadStats() {
                 <div>
                     <div class="card shadow-sm h-100 server-card ${stateClass}">
                         <div class="card-body d-flex flex-column justify-content-center text-center">
-                            <h5 class="card-title">${srv.name}</h5>
                             <div class="text-muted server-label mb-0">CPU Load Average</div>
                             <div class="fw-bold mb-0 server-value">${formatLoadAverage(srv.metrics.cpu)}</div>
+                            <h5 class="card-title">${srv.name}</h5>
                             ${srv.error ? `<div class="alert alert-warning mb-0 server-error text-start">${srv.error}</div>` : ''}
                         </div>
                     </div>
