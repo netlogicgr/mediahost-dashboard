@@ -50,12 +50,12 @@ foreach ($servers as $server) {
             'io' => null,
         ]);
 
-        $deleteOld = $pdo->prepare('DELETE FROM server_stats WHERE server_id = :server_id AND fetched_at < (NOW() - INTERVAL 5 MINUTE)');
+        $deleteOld = $pdo->prepare('DELETE FROM server_stats WHERE server_id = :server_id AND fetched_at < (NOW() - INTERVAL 15 MINUTE)');
         $deleteOld->execute([
             'server_id' => $server['id'],
         ]);
 
-        $historyStmt = $pdo->prepare('SELECT cpu_usage, fetched_at FROM server_stats WHERE server_id = :server_id AND fetched_at >= (NOW() - INTERVAL 5 MINUTE) ORDER BY fetched_at ASC');
+        $historyStmt = $pdo->prepare('SELECT cpu_usage, fetched_at FROM server_stats WHERE server_id = :server_id AND fetched_at >= (NOW() - INTERVAL 15 MINUTE) ORDER BY fetched_at ASC');
         $historyStmt->execute(['server_id' => $server['id']]);
 
         $history = [];
