@@ -117,9 +117,6 @@ if (!is_installed()) {
 </head>
 <body class="bg-light">
 <div class="container-fluid py-4 px-4 d-flex flex-column dashboard-shell">
-    <div class="d-flex justify-content-end align-items-center mb-4">
-        <a href="<?= e(public_url('admin/login.php')) ?>" class="btn btn-outline-primary btn-sm">Admin</a>
-    </div>
     <div id="alerts"></div>
     <div id="cards" class="row g-3 cards-grid"></div>
 </div>
