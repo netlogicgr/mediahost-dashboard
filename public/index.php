@@ -397,15 +397,8 @@ function renderHistoryChart(history) {
                     <stop offset="0%" stop-color="${startColor}"></stop>
                     <stop offset="100%" stop-color="${endColor}"></stop>
                 </linearGradient>
-                <filter id="history-glow" x="-10%" y="-50%" width="120%" height="200%">
-                    <feGaussianBlur stdDeviation="1.1" result="blur"></feGaussianBlur>
-                    <feMerge>
-                        <feMergeNode in="blur"></feMergeNode>
-                        <feMergeNode in="SourceGraphic"></feMergeNode>
-                    </feMerge>
-                </filter>
             </defs>
-            <path d="${smoothPath}" fill="none" stroke="url(#history-gradient)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.8" filter="url(#history-glow)"></path>
+            <path d="${smoothPath}" fill="none" stroke="url(#history-gradient)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9"></path>
             <circle cx="${finalPoint.x.toFixed(2)}" cy="${finalPoint.y.toFixed(2)}" r="3.2" fill="${endColor}" opacity="0.2"></circle>
             <circle cx="${finalPoint.x.toFixed(2)}" cy="${finalPoint.y.toFixed(2)}" r="1.9" fill="${endColor}"></circle>
         </svg>
