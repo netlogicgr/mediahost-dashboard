@@ -168,6 +168,7 @@ endif;
         }
 
         .server-card .history-chart {
+            position: relative;
             width: 100%;
             height: clamp(4.2rem, calc(4.6rem * var(--card-scale)), 6.4rem);
             margin-top: 0;
@@ -181,6 +182,26 @@ endif;
             width: 100%;
             height: 100%;
             display: block;
+        }
+
+        .server-card .history-tooltip {
+            position: absolute;
+            transform: translate(-50%, -100%);
+            pointer-events: none;
+            background: rgba(15, 23, 42, 0.93);
+            color: #fff;
+            border-radius: 0.4rem;
+            padding: 0.32rem 0.45rem;
+            font-size: clamp(0.6rem, calc(0.76rem * var(--card-scale)), 0.9rem);
+            line-height: 1.2;
+            white-space: nowrap;
+            z-index: 2;
+            opacity: 0;
+            transition: opacity 120ms ease-in;
+        }
+
+        .server-card .history-tooltip.active {
+            opacity: 1;
         }
 
         @media (max-width: 1199.98px) {
@@ -284,6 +305,7 @@ async function loadStats() {
         }
 
         updateCardsLayout(data.servers.length);
+        bindHistoryTooltips();
     } catch (e) {
         document.getElementById('alerts').innerHTML = '<div class="alert alert-danger">Failed to load stats.</div>';
     }
@@ -360,7 +382,6 @@ function renderHistoryChart(history) {
     const paddingX = 6;
     const topPadding = 12;
     const bottomPadding = 0;
-    const baselineY = height - bottomPadding;
     const values = points.map((item) => Number(item.cpu));
     const rawMinValue = Math.min(...values);
     const rawMaxValue = Math.max(...values);
@@ -376,7 +397,7 @@ function renderHistoryChart(history) {
         .map((item, index) => {
             const x = paddingX + (index * (width - paddingX * 2)) / (points.length - 1);
             const y = topPadding + (height - topPadding - bottomPadding) * (1 - ((Number(item.cpu) - minValue) / range));
-            return { x, y };
+            return { x, y, value: Number(item.cpu), at: item.at || null };
         });
 
     const createSegment = (start, end) => {
@@ -445,7 +466,17 @@ function renderHistoryChart(history) {
         })
         .join(' ');
 
+    const tooltipPoints = plottedPoints
+        .map((point) => {
+            const formattedTime = formatHistoryTime(point.at);
+            const label = `Load: ${point.value.toFixed(2)}${formattedTime ? ` (${formattedTime})` : ''}`;
+
+            return `<circle class="history-hover-point" data-value="${point.value.toFixed(2)}" data-time="${formattedTime}" cx="${point.x.toFixed(2)}" cy="${point.y.toFixed(2)}" r="9" fill="transparent" aria-label="${label}"><title>${label}</title></circle>`;
+        })
+        .join('');
+
     return `
+        <div class="history-tooltip" aria-hidden="true"></div>
         <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" role="img" aria-label="CPU load history for last 15 minutes">
             <defs>
                 <linearGradient id="history-gradient" x1="0" y1="0" x2="1" y2="0">
@@ -455,10 +486,57 @@ function renderHistoryChart(history) {
             </defs>
             <path d="${smoothPath}" fill="none" stroke="url(#history-gradient)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9"></path>
             ${redPath ? `<path d="${redPath}" fill="none" stroke="${alertColor}" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9"></path>` : ''}
+            ${tooltipPoints}
             <circle cx="${finalPoint.x.toFixed(2)}" cy="${finalPoint.y.toFixed(2)}" r="3.2" fill="${isHighLoad ? alertColor : baseColor}" opacity="0.2"></circle>
             <circle cx="${finalPoint.x.toFixed(2)}" cy="${finalPoint.y.toFixed(2)}" r="1.9" fill="${isHighLoad ? alertColor : baseColor}"></circle>
         </svg>
     `;
+}
+
+function formatHistoryTime(timestamp) {
+    if (!timestamp) {
+        return '';
+    }
+
+    const parsed = new Date(timestamp.replace(' ', 'T'));
+    if (Number.isNaN(parsed.getTime())) {
+        return '';
+    }
+
+    return new Intl.DateTimeFormat('el-GR', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+    }).format(parsed);
+}
+
+function bindHistoryTooltips() {
+    const charts = document.querySelectorAll('.history-chart');
+
+    charts.forEach((chart) => {
+        const tooltip = chart.querySelector('.history-tooltip');
+        if (!tooltip) {
+            return;
+        }
+
+        const points = chart.querySelectorAll('.history-hover-point');
+
+        points.forEach((point) => {
+            point.addEventListener('mouseenter', () => {
+                const value = point.getAttribute('data-value') || 'N/A';
+                const time = point.getAttribute('data-time') || '';
+
+                tooltip.textContent = time ? `${time} • ${value}` : value;
+                tooltip.style.left = `${point.getAttribute('cx')}px`;
+                tooltip.style.top = `${Number(point.getAttribute('cy')) - 8}px`;
+                tooltip.classList.add('active');
+            });
+
+            point.addEventListener('mouseleave', () => {
+                tooltip.classList.remove('active');
+            });
+        });
+    });
 }
 
 loadStats();
