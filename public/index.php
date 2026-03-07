@@ -376,7 +376,7 @@ function renderHistoryChart(history) {
     const points = Array.isArray(history) ? history.filter((item) => item && item.cpu !== null && !Number.isNaN(Number(item.cpu))) : [];
 
     if (points.length < 2) {
-        return '<div class="text-muted small">No 15-minute history yet.</div>';
+        return '<div class="text-muted small">No 30-minute history yet.</div>';
     }
 
     const width = 320;
@@ -479,7 +479,7 @@ function renderHistoryChart(history) {
 
     return `
         <div class="history-tooltip" aria-hidden="true"></div>
-        <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" role="img" aria-label="CPU load history for last 15 minutes">
+        <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" role="img" aria-label="CPU load history for last 30 minutes">
             <defs>
                 <linearGradient id="history-gradient" x1="0" y1="0" x2="1" y2="0">
                     <stop offset="0%" stop-color="#86efac"></stop>
@@ -525,26 +525,29 @@ function bindHistoryTooltips() {
         const points = chart.querySelectorAll('.history-hover-point');
 
         points.forEach((point) => {
-            point.addEventListener('mouseenter', () => {
+            const showTooltip = (event) => {
                 const value = point.getAttribute('data-value') || 'N/A';
                 const time = point.getAttribute('data-time') || '';
-                const pointX = Number(point.getAttribute('cx'));
-                const pointY = Number(point.getAttribute('cy'));
+                const chartRect = chart.getBoundingClientRect();
+                const pointerX = event ? (event.clientX - chartRect.left) : Number(point.getAttribute('cx'));
+                const pointerY = event ? (event.clientY - chartRect.top) : Number(point.getAttribute('cy'));
 
                 tooltip.textContent = time ? `${time} • ${value}` : value;
 
-                const chartWidth = chart.clientWidth;
                 const tooltipWidth = tooltip.offsetWidth;
                 const leftEdge = horizontalPadding;
-                const rightEdge = Math.max(leftEdge, chartWidth - tooltipWidth - horizontalPadding);
-                const centeredLeft = pointX - (tooltipWidth / 2);
+                const rightEdge = Math.max(leftEdge, chart.clientWidth - tooltipWidth - horizontalPadding);
+                const centeredLeft = pointerX - (tooltipWidth / 2);
                 const clampedLeft = Math.min(Math.max(centeredLeft, leftEdge), rightEdge);
 
                 tooltip.style.transform = 'translate(0, -100%)';
                 tooltip.style.left = `${clampedLeft}px`;
-                tooltip.style.top = `${pointY - 8}px`;
+                tooltip.style.top = `${pointerY - 4}px`;
                 tooltip.classList.add('active');
-            });
+            };
+
+            point.addEventListener('mouseenter', showTooltip);
+            point.addEventListener('mousemove', showTooltip);
 
             point.addEventListener('mouseleave', () => {
                 tooltip.classList.remove('active');
