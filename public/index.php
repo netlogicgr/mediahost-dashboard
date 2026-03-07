@@ -83,6 +83,34 @@ if (!is_installed()) {
         @media (max-width: 767.98px) {
             :root {
                 --cards-columns: 1;
+                --cards-rows: auto;
+                --card-scale: 1;
+            }
+
+            html,
+            body {
+                overflow: auto;
+            }
+
+            .dashboard-shell {
+                height: auto;
+                min-height: 100dvh;
+                overflow: visible;
+            }
+
+            .cards-grid {
+                display: flex;
+                flex-direction: column;
+                overflow: visible;
+                gap: 1rem;
+            }
+
+            .server-card {
+                height: auto;
+            }
+
+            .server-card .card-body {
+                padding: 1.25rem;
             }
         }
     </style>
@@ -147,6 +175,13 @@ function getCardsColumns() {
 
 function updateCardsLayout(totalCards) {
     const cards = document.getElementById('cards');
+
+    if (window.innerWidth < 768) {
+        cards.style.setProperty('--cards-rows', 'auto');
+        cards.style.setProperty('--card-scale', '1');
+        return;
+    }
+
     const columns = getCardsColumns();
     const rows = Math.max(1, Math.ceil(totalCards / columns));
     const viewportHeight = window.innerHeight;
