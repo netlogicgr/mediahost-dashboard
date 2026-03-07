@@ -149,8 +149,11 @@ endif;
 
         .server-card .history-chart {
             width: 100%;
-            height: clamp(2.8rem, calc(3rem * var(--card-scale)), 5rem);
-            margin-top: clamp(0.15rem, calc(0.3rem * var(--card-scale)), 0.5rem);
+            height: clamp(3.2rem, calc(3.4rem * var(--card-scale)), 5.4rem);
+            margin-top: clamp(0.15rem, calc(0.25rem * var(--card-scale)), 0.4rem);
+            border-radius: clamp(0.55rem, calc(0.7rem * var(--card-scale)), 0.9rem);
+            overflow: hidden;
+            background: linear-gradient(180deg, rgba(66, 133, 244, 0.16) 0%, rgba(66, 133, 244, 0.03) 100%);
         }
 
         .server-card .history-chart svg {
@@ -240,7 +243,7 @@ async function loadStats() {
             cards.innerHTML += `
                 <div>
                     <div class="card shadow-sm h-100 server-card ${stateClass}">
-                        <div class="card-body d-flex flex-column justify-content-between text-center">
+                        <div class="card-body d-flex flex-column text-center">
                             <div class="server-head">
                                 <h5 class="card-title">${srv.name}</h5>
                                 <div class="text-muted server-label mb-0">CPU Load Average</div>
@@ -323,9 +326,10 @@ function renderHistoryChart(history) {
     }
 
     const width = 320;
-    const height = 90;
+    const height = 92;
     const paddingX = 0;
-    const paddingY = 8;
+    const topPadding = 8;
+    const bottomPadding = 5;
     const baselineY = height;
     const values = points.map((item) => Number(item.cpu));
     const maxValue = Math.max(...values, 1);
@@ -335,7 +339,7 @@ function renderHistoryChart(history) {
     const plottedPoints = points
         .map((item, index) => {
             const x = paddingX + (index * (width - paddingX * 2)) / (points.length - 1);
-            const y = paddingY + (height - paddingY * 2) * (1 - ((Number(item.cpu) - minValue) / range));
+            const y = topPadding + (height - topPadding - bottomPadding) * (1 - ((Number(item.cpu) - minValue) / range));
             return { x, y };
         });
 
@@ -347,25 +351,28 @@ function renderHistoryChart(history) {
         'Z'
     ].join(' ');
 
-    const lineColor = '#30c5ff';
-    const fillColor = '#30c5ff';
-    const gridColor = 'rgba(0,0,0,0.08)';
-    const horizontalGrid = [20, 40, 60, 80];
-    const verticalGridCount = 5;
-    const verticalGrid = Array.from({ length: verticalGridCount }, (_, i) => Math.round((i * width) / (verticalGridCount - 1)));
+    const lineColor = '#2f80ff';
+    const lineGlowColor = 'rgba(47, 128, 255, 0.28)';
+    const fillColor = '#2f80ff';
+    const finalPoint = plottedPoints[plottedPoints.length - 1];
+    const finalValue = values[values.length - 1].toFixed(2);
 
     return `
         <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" role="img" aria-label="CPU load history for last 5 minutes">
-            ${horizontalGrid.map((y) => `<line x1="0" y1="${y}" x2="${width}" y2="${y}" stroke="${gridColor}" stroke-width="1"></line>`).join('')}
-            ${verticalGrid.map((x) => `<line x1="${x}" y1="0" x2="${x}" y2="${height}" stroke="${gridColor}" stroke-width="1"></line>`).join('')}
             <defs>
                 <linearGradient id="historyFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="${fillColor}" stop-opacity="0.24"></stop>
-                    <stop offset="100%" stop-color="${fillColor}" stop-opacity="0.24"></stop>
+                    <stop offset="0%" stop-color="${fillColor}" stop-opacity="0.4"></stop>
+                    <stop offset="100%" stop-color="${fillColor}" stop-opacity="0"></stop>
                 </linearGradient>
+                <filter id="historyGlow" x="-10%" y="-20%" width="120%" height="140%">
+                    <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="${lineGlowColor}"/>
+                </filter>
             </defs>
             <path d="${areaPath}" fill="url(#historyFill)"></path>
-            <polyline fill="none" stroke="${lineColor}" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" points="${polyline}"></polyline>
+            <polyline filter="url(#historyGlow)" fill="none" stroke="${lineColor}" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.8" points="${polyline}"></polyline>
+            <circle cx="${finalPoint.x.toFixed(2)}" cy="${finalPoint.y.toFixed(2)}" r="4.2" fill="white" fill-opacity="0.9"></circle>
+            <circle cx="${finalPoint.x.toFixed(2)}" cy="${finalPoint.y.toFixed(2)}" r="2.9" fill="${lineColor}"></circle>
+            <text x="${Math.max(8, finalPoint.x - 6).toFixed(2)}" y="${Math.max(16, finalPoint.y - 10).toFixed(2)}" text-anchor="end" fill="${lineColor}" font-size="11" font-weight="700">${finalValue}</text>
         </svg>
     `;
 }
