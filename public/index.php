@@ -168,8 +168,8 @@ endif;
             margin-top: auto;
             border-radius: 0;
             overflow: hidden;
-            background: rgba(15, 23, 42, 0.06);
-            border-top: 1px solid rgba(15, 23, 42, 0.08);
+            background: transparent;
+            border-top: 0;
         }
 
         .server-card .history-chart svg {
@@ -372,16 +372,42 @@ function renderHistoryChart(history) {
             return { x, y };
         });
 
-    const polyline = plottedPoints.map((point) => `${point.x.toFixed(2)},${point.y.toFixed(2)}`).join(' ');
     const latestLoad = Number(points[points.length - 1].cpu);
     const isHighLoad = latestLoad > highLoadThreshold;
-    const lineColor = isHighLoad ? '#b91c1c' : '#14532d';
+    const startColor = isHighLoad ? '#fca5a5' : '#86efac';
+    const endColor = isHighLoad ? '#dc2626' : '#16a34a';
     const finalPoint = plottedPoints[plottedPoints.length - 1];
+    const smoothPath = plottedPoints
+        .map((point, index, allPoints) => {
+            if (index === 0) {
+                return `M ${point.x.toFixed(2)} ${point.y.toFixed(2)}`;
+            }
+
+            const prev = allPoints[index - 1];
+            const controlX = ((prev.x + point.x) / 2).toFixed(2);
+
+            return `C ${controlX} ${prev.y.toFixed(2)} ${controlX} ${point.y.toFixed(2)} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`;
+        })
+        .join(' ');
 
     return `
         <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" role="img" aria-label="CPU load history for last 5 minutes">
-            <polyline fill="none" stroke="${lineColor}" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" points="${polyline}"></polyline>
-            <circle cx="${finalPoint.x.toFixed(2)}" cy="${finalPoint.y.toFixed(2)}" r="2.4" fill="${lineColor}"></circle>
+            <defs>
+                <linearGradient id="history-gradient" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stop-color="${startColor}"></stop>
+                    <stop offset="100%" stop-color="${endColor}"></stop>
+                </linearGradient>
+                <filter id="history-glow" x="-10%" y="-50%" width="120%" height="200%">
+                    <feGaussianBlur stdDeviation="1.1" result="blur"></feGaussianBlur>
+                    <feMerge>
+                        <feMergeNode in="blur"></feMergeNode>
+                        <feMergeNode in="SourceGraphic"></feMergeNode>
+                    </feMerge>
+                </filter>
+            </defs>
+            <path d="${smoothPath}" fill="none" stroke="url(#history-gradient)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.8" filter="url(#history-glow)"></path>
+            <circle cx="${finalPoint.x.toFixed(2)}" cy="${finalPoint.y.toFixed(2)}" r="3.2" fill="${endColor}" opacity="0.2"></circle>
+            <circle cx="${finalPoint.x.toFixed(2)}" cy="${finalPoint.y.toFixed(2)}" r="1.9" fill="${endColor}"></circle>
         </svg>
     `;
 }
