@@ -147,3 +147,27 @@ function csrf_validate(?string $token): bool
     session_start_safe();
     return isset($_SESSION['_csrf']) && hash_equals($_SESSION['_csrf'], (string) $token);
 }
+
+function public_access_code(): string
+{
+    return '0631';
+}
+
+function public_access_granted(): bool
+{
+    session_start_safe();
+    return !empty($_SESSION['public_access_granted']);
+}
+
+function public_access_attempt(string $code): bool
+{
+    if (!hash_equals(public_access_code(), trim($code))) {
+        return false;
+    }
+
+    session_start_safe();
+    session_regenerate_id(true);
+    $_SESSION['public_access_granted'] = true;
+
+    return true;
+}

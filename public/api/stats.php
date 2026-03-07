@@ -12,6 +12,12 @@ if (!is_installed()) {
     exit;
 }
 
+if (!public_access_granted()) {
+    http_response_code(401);
+    echo json_encode(['error' => 'Unauthorized']);
+    exit;
+}
+
 $stmt = db()->query('SELECT id, name, host, auth_type, username, api_token FROM servers ORDER BY id DESC');
 $servers = $stmt->fetchAll();
 

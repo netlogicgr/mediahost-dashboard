@@ -7,6 +7,66 @@ require_once dirname(__DIR__) . '/app/helpers.php';
 if (!is_installed()) {
     redirect(public_url('install.php'));
 }
+
+$publicAccessError = null;
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!csrf_validate($_POST['_csrf'] ?? null)) {
+        $publicAccessError = 'Invalid request, please try again.';
+    } elseif (!public_access_attempt((string) ($_POST['access_code'] ?? ''))) {
+        $publicAccessError = 'Wrong code. Please try again.';
+    } else {
+        redirect(public_url());
+    }
+}
+
+if (!public_access_granted()):
+?>
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Protected Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light d-flex align-items-center" style="min-height: 100dvh;">
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-12 col-sm-10 col-md-8 col-lg-5">
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <h1 class="h4 mb-3">Enter access code</h1>
+                    <p class="text-muted">This public page is protected. Please enter the code to continue.</p>
+                    <?php if ($publicAccessError): ?>
+                        <div class="alert alert-danger"><?= e($publicAccessError) ?></div>
+                    <?php endif; ?>
+                    <form method="post" action="<?= e(public_url()) ?>">
+                        <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
+                        <div class="mb-3">
+                            <label for="access_code" class="form-label">Code</label>
+                            <input
+                                type="password"
+                                class="form-control"
+                                id="access_code"
+                                name="access_code"
+                                inputmode="numeric"
+                                autocomplete="one-time-code"
+                                required
+                            >
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">View dashboard</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
+<?php
+exit;
+endif;
 ?>
 <!doctype html>
 <html lang="en">
@@ -124,6 +184,12 @@ if (!is_installed()) {
 async function loadStats() {
     try {
         const res = await fetch('<?= e(public_url('api/stats.php')) ?>');
+
+        if (res.status === 401) {
+            window.location.reload();
+            return;
+        }
+
         const data = await res.json();
 
         const cards = document.getElementById('cards');
