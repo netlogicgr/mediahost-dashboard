@@ -5,7 +5,7 @@ declare(strict_types=1);
 require_once dirname(__DIR__) . '/app/helpers.php';
 
 if (is_installed()) {
-    redirect('/admin/login.php');
+    redirect(public_url('admin/login.php'));
 }
 
 $error = null;
@@ -100,7 +100,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <h1 class="h4 mb-3">Installation Wizard</h1>
             <p class="text-muted">Configure database and create your admin account.</p>
             <?php if ($error): ?><div class="alert alert-danger"><?= e($error) ?></div><?php endif; ?>
-            <?php if ($success): ?><div class="alert alert-success"><?= e($success) ?> <a href="/admin/login.php">Login</a></div><?php endif; ?>
+            <?php if ($success): ?><div class="alert alert-success"><?= e($success) ?> <a href="<?= e(public_url('admin/login.php')) ?>">Login</a></div><?php endif; ?>
             <form method="post">
                 <h2 class="h6 mt-3">Database</h2>
                 <div class="row g-2">

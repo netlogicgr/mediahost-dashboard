@@ -28,8 +28,8 @@ $stats = db()->query('SELECT COUNT(*) as c FROM server_stats')->fetch();
 <div class="card shadow-sm mt-4">
     <div class="card-body">
         <h2 class="h6">Quick Links</h2>
-        <a href="/admin/servers.php" class="btn btn-primary btn-sm">Manage Servers</a>
-        <a href="/" class="btn btn-outline-secondary btn-sm">Open Public Page</a>
+        <a href="<?= e(public_url('admin/servers.php')) ?>" class="btn btn-primary btn-sm">Manage Servers</a>
+        <a href="<?= e(public_url()) ?>" class="btn btn-outline-secondary btn-sm">Open Public Page</a>
     </div>
 </div>
 <?php require __DIR__ . '/_footer.php'; ?>
