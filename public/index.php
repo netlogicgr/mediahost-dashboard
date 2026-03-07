@@ -115,18 +115,23 @@ endif;
             gap: 0;
             overflow: hidden;
             height: 100%;
+            align-items: center;
         }
 
         .server-card .server-content {
-            padding: clamp(0.65rem, calc(0.9rem * var(--card-scale)), 2rem) clamp(0.8rem, calc(1rem * var(--card-scale)), 2.1rem) clamp(0.4rem, calc(0.55rem * var(--card-scale)), 1rem);
+            width: 100%;
+            flex: 1;
+            justify-content: center;
+            padding: clamp(0.8rem, calc(1rem * var(--card-scale)), 2.2rem) clamp(0.8rem, calc(1rem * var(--card-scale)), 2.2rem) clamp(0.6rem, calc(0.75rem * var(--card-scale)), 1.3rem);
             display: flex;
             flex-direction: column;
             align-items: center;
             gap: clamp(0.25rem, calc(0.4rem * var(--card-scale)), 0.75rem);
+            text-align: center;
         }
 
         .server-card .card-title {
-            font-size: clamp(0.9rem, calc(1rem * var(--card-scale)), 1.6rem);
+            font-size: clamp(0.95rem, calc(1.08rem * var(--card-scale)), 1.9rem);
             margin-bottom: 0;
             white-space: nowrap;
             overflow: hidden;
@@ -144,11 +149,11 @@ endif;
         .server-card .server-host,
         .server-card .server-label,
         .server-card .server-error {
-            font-size: clamp(0.75rem, calc(0.95rem * var(--card-scale)), 1.35rem);
+            font-size: clamp(0.8rem, calc(1rem * var(--card-scale)), 1.5rem);
         }
 
         .server-card .server-value {
-            font-size: clamp(2.4rem, calc(3.8rem * var(--card-scale)), 8.25rem);
+            font-size: clamp(2.7rem, calc(4.2rem * var(--card-scale)), 9.75rem);
             line-height: 1.1;
             margin: clamp(0.15rem, calc(0.35rem * var(--card-scale)), 0.8rem) 0 0;
         }
@@ -165,7 +170,7 @@ endif;
         .server-card .history-chart {
             width: 100%;
             height: clamp(4.2rem, calc(4.6rem * var(--card-scale)), 6.4rem);
-            margin-top: auto;
+            margin-top: 0;
             border-radius: 0;
             overflow: hidden;
             background: transparent;
@@ -312,7 +317,9 @@ function updateCardsLayout(totalCards) {
     const availableHeight = Math.max(320, viewportHeight - cardsTopOffset - 16);
     const widthScale = window.innerWidth / (columns * 420);
     const heightScale = availableHeight / (rows * 230);
-    const cardScale = Math.max(0.45, Math.min(1.35, Math.min(widthScale, heightScale)));
+    const baseScale = Math.min(widthScale, heightScale);
+    const largeScreenBoost = window.innerWidth >= 1600 ? 1.15 : 1;
+    const cardScale = Math.max(0.45, Math.min(1.6, baseScale * largeScreenBoost));
 
     cards.style.setProperty('--cards-rows', String(rows));
     cards.style.setProperty('--card-scale', cardScale.toFixed(2));
