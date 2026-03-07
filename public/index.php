@@ -134,6 +134,18 @@ endif;
             overflow: hidden;
         }
 
+        .server-card .history-chart {
+            width: 100%;
+            height: clamp(3rem, calc(4rem * var(--card-scale)), 7rem);
+            margin-top: clamp(0.3rem, calc(0.4rem * var(--card-scale)), 0.8rem);
+        }
+
+        .server-card .history-chart svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
         @media (max-width: 1199.98px) {
             :root {
                 --cards-columns: 2;
@@ -202,6 +214,7 @@ async function loadStats() {
 
         for (const srv of data.servers) {
             const stateClass = getLoadStateClass(srv.metrics?.cpu);
+            const historyChart = renderHistoryChart(srv.history || []);
 
             cards.innerHTML += `
                 <div>
@@ -209,6 +222,7 @@ async function loadStats() {
                         <div class="card-body d-flex flex-column justify-content-center text-center">
                             <div class="text-muted server-label mb-0">CPU Load Average</div>
                             <div class="fw-bold mb-0 server-value">${formatLoadAverage(srv.metrics.cpu)}</div>
+                            <div class="history-chart">${historyChart}</div>
                             <h5 class="card-title">${srv.name}</h5>
                             ${srv.error ? `<div class="alert alert-warning mb-0 server-error text-start">${srv.error}</div>` : ''}
                         </div>
@@ -276,6 +290,37 @@ function formatLoadAverage(value) {
     }
 
     return Number(value).toFixed(2);
+}
+
+function renderHistoryChart(history) {
+    const points = Array.isArray(history) ? history.filter((item) => item && item.cpu !== null && !Number.isNaN(Number(item.cpu))) : [];
+
+    if (points.length < 2) {
+        return '<div class="text-muted small">No 5-minute history yet.</div>';
+    }
+
+    const width = 320;
+    const height = 90;
+    const padding = 8;
+    const values = points.map((item) => Number(item.cpu));
+    const maxValue = Math.max(...values, 1);
+    const minValue = Math.min(...values, 0);
+    const range = maxValue - minValue || 1;
+
+    const polyline = points
+        .map((item, index) => {
+            const x = padding + (index * (width - padding * 2)) / (points.length - 1);
+            const y = padding + (height - padding * 2) * (1 - ((Number(item.cpu) - minValue) / range));
+            return `${x.toFixed(2)},${y.toFixed(2)}`;
+        })
+        .join(' ');
+
+    return `
+        <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" role="img" aria-label="CPU load history for last 5 minutes">
+            <rect x="0" y="0" width="${width}" height="${height}" fill="rgba(13,110,253,0.06)"></rect>
+            <polyline fill="none" stroke="rgba(13,110,253,0.85)" stroke-width="3" points="${polyline}"></polyline>
+        </svg>
+    `;
 }
 
 loadStats();
