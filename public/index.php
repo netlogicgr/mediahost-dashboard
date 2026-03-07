@@ -156,6 +156,7 @@ endif;
             font-size: clamp(2.7rem, calc(4.2rem * var(--card-scale)), 9.75rem);
             line-height: 1.1;
             margin: clamp(0.15rem, calc(0.35rem * var(--card-scale)), 0.8rem) 0 0;
+            overflow-wrap: anywhere;
         }
 
         .server-card .server-error {
@@ -170,12 +171,13 @@ endif;
         .server-card .history-chart {
             position: relative;
             width: 100%;
-            height: clamp(5rem, calc(5.8rem * var(--card-scale)), 8rem);
+            height: clamp(3.25rem, calc(5.8rem * var(--card-scale)), 8rem);
             margin-top: 0;
             border-radius: 0;
             overflow: visible;
             background: transparent;
             border-top: 0;
+            flex-shrink: 0;
         }
 
         .server-card .history-chart svg {
@@ -338,10 +340,10 @@ function updateCardsLayout(totalCards) {
     const cardsTopOffset = cards.getBoundingClientRect().top;
     const availableHeight = Math.max(320, viewportHeight - cardsTopOffset - 16);
     const widthScale = window.innerWidth / (columns * 420);
-    const heightScale = availableHeight / (rows * 230);
+    const heightScale = availableHeight / (rows * 300);
     const baseScale = Math.min(widthScale, heightScale);
     const largeScreenBoost = window.innerWidth >= 1600 ? 1.15 : 1;
-    const cardScale = Math.max(0.45, Math.min(1.6, baseScale * largeScreenBoost));
+    const cardScale = Math.max(0.35, Math.min(1.6, baseScale * largeScreenBoost));
 
     cards.style.setProperty('--cards-rows', String(rows));
     cards.style.setProperty('--card-scale', cardScale.toFixed(2));
