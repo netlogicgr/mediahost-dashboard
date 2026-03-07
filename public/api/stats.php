@@ -23,7 +23,7 @@ foreach ($servers as $server) {
         'id' => (int) $server['id'],
         'name' => $server['name'],
         'host' => $server['host'],
-        'metrics' => ['cpu' => null, 'ram' => null, 'disk' => null, 'io' => null],
+        'metrics' => ['cpu' => null],
         'error' => null,
     ];
 
@@ -31,18 +31,15 @@ foreach ($servers as $server) {
         $stats = $service->fetchServerStats($server);
         $row['metrics'] = [
             'cpu' => $stats['cpu'],
-            'ram' => $stats['ram'],
-            'disk' => $stats['disk'],
-            'io' => $stats['io'],
         ];
 
         $insert = db()->prepare('INSERT INTO server_stats (server_id, cpu_usage, ram_usage, disk_usage, io_usage, fetched_at) VALUES (:server_id,:cpu,:ram,:disk,:io,NOW())');
         $insert->execute([
             'server_id' => $server['id'],
             'cpu' => $stats['cpu'],
-            'ram' => $stats['ram'],
-            'disk' => $stats['disk'],
-            'io' => $stats['io'],
+            'ram' => null,
+            'disk' => null,
+            'io' => null,
         ]);
     } catch (Throwable $e) {
         $row['error'] = $e->getMessage();
