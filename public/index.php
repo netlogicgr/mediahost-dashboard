@@ -15,16 +15,35 @@ if (!is_installed()) {
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Server Metrics Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .dashboard-shell {
+            min-height: 100vh;
+        }
+
+        .cards-grid {
+            flex: 1;
+            align-content: flex-start;
+        }
+
+        .server-column {
+            display: flex;
+        }
+
+        .server-card {
+            width: 100%;
+            min-height: 260px;
+        }
+    </style>
 </head>
 <body class="bg-light">
-<div class="container py-4">
+<div class="container-fluid py-4 px-4 d-flex flex-column dashboard-shell">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 mb-0">Public Server Metrics</h1>
         <a href="<?= e(public_url('admin/login.php')) ?>" class="btn btn-outline-primary btn-sm">Admin</a>
     </div>
     <p class="text-muted">Auto refresh every 10 seconds.</p>
     <div id="alerts"></div>
-    <div id="cards" class="row g-3"></div>
+    <div id="cards" class="row g-3 cards-grid"></div>
 </div>
 <script>
 async function loadStats() {
@@ -41,9 +60,11 @@ async function loadStats() {
         }
 
         for (const srv of data.servers) {
+            const stateClass = getLoadStateClass(srv.metrics?.cpu);
+
             cards.innerHTML += `
-                <div class="col-md-6 col-lg-4">
-                    <div class="card shadow-sm h-100">
+                <div class="col-12 col-md-6 col-xl-4 server-column">
+                    <div class="card shadow-sm h-100 server-card ${stateClass}">
                         <div class="card-body d-flex flex-column justify-content-center text-center py-5">
                             <h5 class="card-title">${srv.name}</h5>
                             <p class="text-muted small mb-4">${srv.host}</p>
@@ -57,6 +78,20 @@ async function loadStats() {
     } catch (e) {
         document.getElementById('alerts').innerHTML = '<div class="alert alert-danger">Failed to load stats.</div>';
     }
+}
+
+function getLoadStateClass(value) {
+    const parsedValue = Number(value);
+
+    if (Number.isNaN(parsedValue)) {
+        return '';
+    }
+
+    if (parsedValue > 18) {
+        return 'bg-danger-subtle border-danger-subtle';
+    }
+
+    return 'bg-success-subtle border-success-subtle';
 }
 
 function formatLoadAverage(value) {
