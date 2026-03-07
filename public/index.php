@@ -168,7 +168,7 @@ endif;
             margin-top: auto;
             border-radius: 0;
             overflow: hidden;
-            background: linear-gradient(180deg, rgba(15, 23, 42, 0.08) 0%, rgba(15, 23, 42, 0.16) 100%);
+            background: rgba(15, 23, 42, 0.06);
             border-top: 1px solid rgba(15, 23, 42, 0.08);
         }
 
@@ -341,6 +341,7 @@ function formatLoadAverage(value) {
 }
 
 function renderHistoryChart(history) {
+    const highLoadThreshold = 18;
     const points = Array.isArray(history) ? history.filter((item) => item && item.cpu !== null && !Number.isNaN(Number(item.cpu))) : [];
 
     if (points.length < 2) {
@@ -372,27 +373,13 @@ function renderHistoryChart(history) {
         });
 
     const polyline = plottedPoints.map((point) => `${point.x.toFixed(2)},${point.y.toFixed(2)}`).join(' ');
-    const areaPath = [
-        `M ${plottedPoints[0].x.toFixed(2)} ${baselineY}`,
-        ...plottedPoints.map((point) => `L ${point.x.toFixed(2)} ${point.y.toFixed(2)}`),
-        `L ${plottedPoints[plottedPoints.length - 1].x.toFixed(2)} ${baselineY}`,
-        'Z'
-    ].join(' ');
-
-    const lineColor = '#0f172a';
-    const fillColor = '#334155';
+    const latestLoad = Number(points[points.length - 1].cpu);
+    const isHighLoad = latestLoad > highLoadThreshold;
+    const lineColor = isHighLoad ? '#b91c1c' : '#14532d';
     const finalPoint = plottedPoints[plottedPoints.length - 1];
-    const gradientId = `historyFill-${Math.random().toString(36).slice(2, 9)}`;
 
     return `
         <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" role="img" aria-label="CPU load history for last 5 minutes">
-            <defs>
-                <linearGradient id="${gradientId}" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="${fillColor}" stop-opacity="0.22"></stop>
-                    <stop offset="100%" stop-color="${fillColor}" stop-opacity="0.03"></stop>
-                </linearGradient>
-            </defs>
-            <path d="${areaPath}" fill="url(#${gradientId})"></path>
             <polyline fill="none" stroke="${lineColor}" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" points="${polyline}"></polyline>
             <circle cx="${finalPoint.x.toFixed(2)}" cy="${finalPoint.y.toFixed(2)}" r="2.4" fill="${lineColor}"></circle>
         </svg>
