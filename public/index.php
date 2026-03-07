@@ -352,7 +352,7 @@ function renderHistoryChart(history) {
     const points = Array.isArray(history) ? history.filter((item) => item && item.cpu !== null && !Number.isNaN(Number(item.cpu))) : [];
 
     if (points.length < 2) {
-        return '<div class="text-muted small">No 5-minute history yet.</div>';
+        return '<div class="text-muted small">No 15-minute history yet.</div>';
     }
 
     const width = 320;
@@ -446,7 +446,7 @@ function renderHistoryChart(history) {
         .join(' ');
 
     return `
-        <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" role="img" aria-label="CPU load history for last 5 minutes">
+        <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" role="img" aria-label="CPU load history for last 15 minutes">
             <defs>
                 <linearGradient id="history-gradient" x1="0" y1="0" x2="1" y2="0">
                     <stop offset="0%" stop-color="#86efac"></stop>
