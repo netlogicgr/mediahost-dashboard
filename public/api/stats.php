@@ -59,7 +59,7 @@ foreach ($servers as $server) {
             FROM server_stats
             WHERE server_id = :server_id
                 AND fetched_at >= (
-                    SELECT DATE_SUB(MAX(fetched_at), INTERVAL 30 MINUTE)
+                    SELECT DATE_SUB(MAX(fetched_at), INTERVAL 1 HOUR)
                     FROM server_stats
                     WHERE server_id = :server_id
                 )
