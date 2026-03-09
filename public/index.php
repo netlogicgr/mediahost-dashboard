@@ -230,7 +230,7 @@ endif;
             line-height: 1em;
             transform: translateY(calc((var(--digit-target) + 10) * -1em));
             opacity: 0;
-            animation: rollDigitTrack 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+            animation: rollDigitTrack 2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
             animation-delay: var(--digit-delay, 0ms);
         }
 
@@ -241,9 +241,6 @@ endif;
 
         .rolling-number__separator {
             min-width: 0.28em;
-            opacity: 0;
-            animation: fadeSeparator 0.35s ease-out forwards;
-            animation-delay: var(--digit-delay, 0ms);
         }
 
         @keyframes rollDigitTrack {
@@ -258,16 +255,6 @@ endif;
 
             100% {
                 transform: translateY(calc(var(--digit-target) * -1em));
-                opacity: 1;
-            }
-        }
-
-        @keyframes fadeSeparator {
-            from {
-                opacity: 0;
-            }
-
-            to {
                 opacity: 1;
             }
         }
@@ -451,7 +438,7 @@ function renderLoadAverage(formatted, previousFormatted) {
     const frame = formatted
         .split('')
         .map((char, index) => {
-            const delay = (index * 70) + 70;
+            const delay = 0;
             const previousChar = previousFormatted?.[index] ?? null;
 
             if (/\d/.test(char)) {
