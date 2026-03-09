@@ -23,6 +23,27 @@ $servers = $stmt->fetchAll();
 
 $service = new CpanelApiService();
 $out = [];
+$pdo = db();
+
+$historyStmt = $pdo->prepare('SELECT cpu_usage, fetched_at
+    FROM (
+        SELECT cpu_usage, fetched_at
+        FROM server_stats
+        WHERE server_id = :server_id
+        ORDER BY fetched_at DESC
+        LIMIT 120
+    ) latest
+    ORDER BY fetched_at ASC');
+
+$latestStmt = $pdo->prepare('SELECT cpu_usage
+    FROM server_stats
+    WHERE server_id = :server_id
+    ORDER BY fetched_at DESC
+    LIMIT 1');
+
+$insertStmt = $pdo->prepare('INSERT INTO server_stats (server_id, cpu_usage, ram_usage, disk_usage, io_usage, fetched_at) VALUES (:server_id,:cpu,:ram,:disk,:io,NOW())');
+
+$deleteOldStmt = $pdo->prepare('DELETE FROM server_stats WHERE server_id = :server_id AND fetched_at < (NOW() - INTERVAL 7 DAY)');
 
 foreach ($servers as $server) {
     $row = [
@@ -40,9 +61,7 @@ foreach ($servers as $server) {
             'cpu' => $stats['cpu'],
         ];
 
-        $pdo = db();
-        $insert = $pdo->prepare('INSERT INTO server_stats (server_id, cpu_usage, ram_usage, disk_usage, io_usage, fetched_at) VALUES (:server_id,:cpu,:ram,:disk,:io,NOW())');
-        $insert->execute([
+        $insertStmt->execute([
             'server_id' => $server['id'],
             'cpu' => $stats['cpu'],
             'ram' => null,
@@ -50,33 +69,29 @@ foreach ($servers as $server) {
             'io' => null,
         ]);
 
-        $deleteOld = $pdo->prepare('DELETE FROM server_stats WHERE server_id = :server_id AND fetched_at < (NOW() - INTERVAL 7 DAY)');
-        $deleteOld->execute([
+        $deleteOldStmt->execute([
             'server_id' => $server['id'],
         ]);
-
-        $historyStmt = $pdo->prepare('SELECT cpu_usage, fetched_at
-            FROM server_stats
-            WHERE server_id = :server_id
-                AND fetched_at >= (
-                    SELECT DATE_SUB(MAX(fetched_at), INTERVAL 1 HOUR)
-                    FROM server_stats
-                    WHERE server_id = :server_id
-                )
-            ORDER BY fetched_at ASC');
-        $historyStmt->execute(['server_id' => $server['id']]);
-
-        $history = [];
-        foreach ($historyStmt->fetchAll() as $historyRow) {
-            $history[] = [
-                'cpu' => $historyRow['cpu_usage'] !== null ? (float) $historyRow['cpu_usage'] : null,
-                'at' => $historyRow['fetched_at'],
-            ];
-        }
-
-        $row['history'] = $history;
     } catch (Throwable $e) {
         $row['error'] = $e->getMessage();
+    }
+
+    $historyStmt->execute(['server_id' => $server['id']]);
+    $history = [];
+    foreach ($historyStmt->fetchAll() as $historyRow) {
+        $history[] = [
+            'cpu' => $historyRow['cpu_usage'] !== null ? (float) $historyRow['cpu_usage'] : null,
+            'at' => $historyRow['fetched_at'],
+        ];
+    }
+    $row['history'] = $history;
+
+    if ($row['metrics']['cpu'] === null) {
+        $latestStmt->execute(['server_id' => $server['id']]);
+        $latestCpu = $latestStmt->fetchColumn();
+        if ($latestCpu !== false && $latestCpu !== null) {
+            $row['metrics']['cpu'] = (float) $latestCpu;
+        }
     }
 
     $out[] = $row;
