@@ -32,7 +32,7 @@ $historyStmt = $pdo->prepare('SELECT cpu_usage, fetched_at
         WHERE server_id = :server_id
           AND fetched_at >= (NOW() - INTERVAL 1 HOUR)
         ORDER BY fetched_at DESC
-        LIMIT 120
+        LIMIT 360
     ) latest
     ORDER BY fetched_at ASC');
 
@@ -69,13 +69,13 @@ foreach ($servers as $server) {
             'disk' => null,
             'io' => null,
         ]);
-
-        $deleteOldStmt->execute([
-            'server_id' => $server['id'],
-        ]);
     } catch (Throwable $e) {
         $row['error'] = $e->getMessage();
     }
+
+    $deleteOldStmt->execute([
+        'server_id' => $server['id'],
+    ]);
 
     $historyStmt->execute(['server_id' => $server['id']]);
     $history = [];
