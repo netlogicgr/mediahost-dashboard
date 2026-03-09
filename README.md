@@ -11,7 +11,7 @@ PHP/MySQL dashboard that connects to multiple cPanel/WHM servers and shows **CPU
   - Add/remove servers (host + auth type + username + API token)
   - Dashboard overview
   - App updater from GitHub ZIP URL or direct ZIP upload
-- Metrics endpoint (`/api/stats.php`) stores server snapshots in MySQL (`server_stats`) and returns the latest 30-minute window from the newest sample.
+- Metrics endpoint (`/api/stats.php`) stores server snapshots in MySQL (`server_stats`) and returns up to the latest 120 stored samples so historical data still appears after reconnects.
 
 ## Requirements
 
