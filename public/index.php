@@ -331,6 +331,8 @@ endif;
     <div id="cards" class="row g-3 cards-grid"></div>
 </div>
 <script>
+const previousLoadByServer = new Map();
+
 async function loadStats() {
     try {
         const res = await fetch('<?= e(public_url('api/stats.php')) ?>');
@@ -353,6 +355,10 @@ async function loadStats() {
         for (const srv of data.servers) {
             const stateClass = getLoadStateClass(srv.metrics?.cpu);
             const historyChart = renderHistoryChart(srv.history || []);
+            const serverKey = String(srv.id ?? srv.name ?? '');
+            const previousLoad = previousLoadByServer.get(serverKey);
+            const currentLoad = formatLoadAverage(srv.metrics?.cpu);
+            previousLoadByServer.set(serverKey, currentLoad);
 
             cards.innerHTML += `
                 <div>
@@ -363,7 +369,7 @@ async function loadStats() {
                                     <h5 class="card-title">${srv.name}</h5>
                                     <div class="text-muted server-label mb-0">CPU Load Average</div>
                                 </div>
-                                <div class="fw-bold mb-0 server-value">${renderLoadAverage(srv.metrics.cpu)}</div>
+                                <div class="fw-bold mb-0 server-value">${renderLoadAverage(currentLoad, previousLoad)}</div>
                                 ${srv.error ? `<div class="alert alert-warning server-error text-start">${srv.error}</div>` : ''}
                             </div>
                             <div class="history-chart">${historyChart}</div>
@@ -437,9 +443,7 @@ function formatLoadAverage(value) {
     return Number(value).toFixed(2);
 }
 
-function renderLoadAverage(value) {
-    const formatted = formatLoadAverage(value);
-
+function renderLoadAverage(formatted, previousFormatted) {
     if (formatted === 'N/A') {
         return formatted;
     }
@@ -448,9 +452,11 @@ function renderLoadAverage(value) {
         .split('')
         .map((char, index) => {
             const delay = (index * 70) + 70;
+            const previousChar = previousFormatted?.[index] ?? null;
 
             if (/\d/.test(char)) {
-                return renderRollingDigit(char, delay);
+                const hasChanged = previousChar !== char;
+                return hasChanged ? renderRollingDigit(char, delay) : `<span class="rolling-number__digit">${char}</span>`;
             }
 
             return `<span class="rolling-number__separator" style="--digit-delay:${delay}ms">${char}</span>`;
