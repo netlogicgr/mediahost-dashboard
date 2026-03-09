@@ -211,27 +211,44 @@ endif;
             align-items: flex-end;
             gap: 0.03em;
             overflow: hidden;
+            font-variant-numeric: tabular-nums;
         }
 
         .rolling-number__digit {
-            display: inline-block;
+            display: inline-flex;
+            height: 1em;
             min-width: 0.58em;
+            overflow: hidden;
             text-align: center;
-            transform: translateY(-120%);
+            align-items: flex-start;
+        }
+
+        .rolling-number__digit-track {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            line-height: 1em;
+            transform: translateY(calc((var(--digit-target) + 10) * -1em));
             opacity: 0;
-            animation: rollDigit 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+            animation: rollDigitTrack 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+            animation-delay: var(--digit-delay, 0ms);
+        }
+
+        .rolling-number__digit-track span {
+            display: block;
+            height: 1em;
         }
 
         .rolling-number__separator {
             min-width: 0.28em;
             opacity: 0;
-            transform: translateY(-50%);
             animation: fadeSeparator 0.35s ease-out forwards;
+            animation-delay: var(--digit-delay, 0ms);
         }
 
-        @keyframes rollDigit {
+        @keyframes rollDigitTrack {
             0% {
-                transform: translateY(-120%);
+                transform: translateY(calc((var(--digit-target) + 10) * -1em));
                 opacity: 0;
             }
 
@@ -240,7 +257,7 @@ endif;
             }
 
             100% {
-                transform: translateY(0);
+                transform: translateY(calc(var(--digit-target) * -1em));
                 opacity: 1;
             }
         }
@@ -248,12 +265,10 @@ endif;
         @keyframes fadeSeparator {
             from {
                 opacity: 0;
-                transform: translateY(-50%);
             }
 
             to {
                 opacity: 1;
-                transform: translateY(0);
             }
         }
 
@@ -435,14 +450,25 @@ function renderLoadAverage(value) {
             const delay = (index * 70) + 70;
 
             if (/\d/.test(char)) {
-                return `<span class="rolling-number__digit" style="animation-delay:${delay}ms">${char}</span>`;
+                return renderRollingDigit(char, delay);
             }
 
-            return `<span class="rolling-number__separator" style="animation-delay:${delay}ms">${char}</span>`;
+            return `<span class="rolling-number__separator" style="--digit-delay:${delay}ms">${char}</span>`;
         })
         .join('');
 
     return `<span class="rolling-number" aria-label="Load average ${formatted}">${frame}</span>`;
+}
+
+function renderRollingDigit(char, delay) {
+    const target = Number(char);
+    let track = '';
+
+    for (let i = 0; i < 20; i += 1) {
+        track += `<span>${i % 10}</span>`;
+    }
+
+    return `<span class="rolling-number__digit" style="--digit-target:${target}"><span class="rolling-number__digit-track" style="--digit-target:${target};--digit-delay:${delay}ms">${track}</span></span>`;
 }
 
 function renderHistoryChart(history) {
