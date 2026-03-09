@@ -221,6 +221,14 @@ endif;
             overflow: hidden;
             text-align: center;
             align-items: flex-start;
+            justify-content: center;
+            line-height: 1em;
+        }
+
+        .rolling-number__digit-static {
+            display: block;
+            height: 1em;
+            line-height: 1em;
         }
 
         .rolling-number__digit-track {
@@ -443,7 +451,7 @@ function renderLoadAverage(formatted, previousFormatted) {
 
             if (/\d/.test(char)) {
                 const hasChanged = previousChar !== char;
-                return hasChanged ? renderRollingDigit(char, delay) : `<span class="rolling-number__digit">${char}</span>`;
+                return hasChanged ? renderRollingDigit(char, delay) : `<span class="rolling-number__digit"><span class="rolling-number__digit-static">${char}</span></span>`;
             }
 
             return `<span class="rolling-number__separator" style="--digit-delay:${delay}ms">${char}</span>`;
