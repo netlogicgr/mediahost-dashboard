@@ -206,6 +206,57 @@ endif;
             opacity: 1;
         }
 
+        .rolling-number {
+            display: inline-flex;
+            align-items: flex-end;
+            gap: 0.03em;
+            overflow: hidden;
+        }
+
+        .rolling-number__digit {
+            display: inline-block;
+            min-width: 0.58em;
+            text-align: center;
+            transform: translateY(-120%);
+            opacity: 0;
+            animation: rollDigit 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+
+        .rolling-number__separator {
+            min-width: 0.28em;
+            opacity: 0;
+            transform: translateY(-50%);
+            animation: fadeSeparator 0.35s ease-out forwards;
+        }
+
+        @keyframes rollDigit {
+            0% {
+                transform: translateY(-120%);
+                opacity: 0;
+            }
+
+            70% {
+                opacity: 1;
+            }
+
+            100% {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeSeparator {
+            from {
+                opacity: 0;
+                transform: translateY(-50%);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
         @media (max-width: 1199.98px) {
             :root {
                 --cards-columns: 2;
@@ -297,7 +348,7 @@ async function loadStats() {
                                     <h5 class="card-title">${srv.name}</h5>
                                     <div class="text-muted server-label mb-0">CPU Load Average</div>
                                 </div>
-                                <div class="fw-bold mb-0 server-value">${formatLoadAverage(srv.metrics.cpu)}</div>
+                                <div class="fw-bold mb-0 server-value">${renderLoadAverage(srv.metrics.cpu)}</div>
                                 ${srv.error ? `<div class="alert alert-warning server-error text-start">${srv.error}</div>` : ''}
                             </div>
                             <div class="history-chart">${historyChart}</div>
@@ -369,6 +420,29 @@ function formatLoadAverage(value) {
     }
 
     return Number(value).toFixed(2);
+}
+
+function renderLoadAverage(value) {
+    const formatted = formatLoadAverage(value);
+
+    if (formatted === 'N/A') {
+        return formatted;
+    }
+
+    const frame = formatted
+        .split('')
+        .map((char, index) => {
+            const delay = (index * 70) + 70;
+
+            if (/\d/.test(char)) {
+                return `<span class="rolling-number__digit" style="animation-delay:${delay}ms">${char}</span>`;
+            }
+
+            return `<span class="rolling-number__separator" style="animation-delay:${delay}ms">${char}</span>`;
+        })
+        .join('');
+
+    return `<span class="rolling-number" aria-label="Load average ${formatted}">${frame}</span>`;
 }
 
 function renderHistoryChart(history) {
