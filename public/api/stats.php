@@ -30,7 +30,6 @@ $historyStmt = $pdo->prepare('SELECT cpu_usage, fetched_at
         SELECT cpu_usage, fetched_at
         FROM server_stats
         WHERE server_id = :server_id
-          AND fetched_at >= (NOW() - INTERVAL 1 HOUR)
         ORDER BY fetched_at DESC
         LIMIT 360
     ) latest
@@ -44,7 +43,18 @@ $latestStmt = $pdo->prepare('SELECT cpu_usage
 
 $insertStmt = $pdo->prepare('INSERT INTO server_stats (server_id, cpu_usage, ram_usage, disk_usage, io_usage, fetched_at) VALUES (:server_id,:cpu,:ram,:disk,:io,NOW())');
 
-$deleteOldStmt = $pdo->prepare('DELETE FROM server_stats WHERE server_id = :server_id AND fetched_at < (NOW() - INTERVAL 1 HOUR)');
+$deleteOldStmt = $pdo->prepare('DELETE FROM server_stats
+    WHERE server_id = :server_id
+      AND id NOT IN (
+          SELECT id
+          FROM (
+              SELECT id
+              FROM server_stats
+              WHERE server_id = :history_server_id
+              ORDER BY fetched_at DESC
+              LIMIT 360
+          ) latest
+      )');
 
 foreach ($servers as $server) {
     $row = [
@@ -75,6 +85,7 @@ foreach ($servers as $server) {
 
     $deleteOldStmt->execute([
         'server_id' => $server['id'],
+        'history_server_id' => $server['id'],
     ]);
 
     $historyStmt->execute(['server_id' => $server['id']]);
