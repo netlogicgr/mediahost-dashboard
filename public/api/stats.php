@@ -30,6 +30,7 @@ $historyStmt = $pdo->prepare('SELECT cpu_usage, fetched_at
         SELECT cpu_usage, fetched_at
         FROM server_stats
         WHERE server_id = :server_id
+          AND fetched_at >= (NOW() - INTERVAL 1 HOUR)
         ORDER BY fetched_at DESC
         LIMIT 120
     ) latest
@@ -43,7 +44,7 @@ $latestStmt = $pdo->prepare('SELECT cpu_usage
 
 $insertStmt = $pdo->prepare('INSERT INTO server_stats (server_id, cpu_usage, ram_usage, disk_usage, io_usage, fetched_at) VALUES (:server_id,:cpu,:ram,:disk,:io,NOW())');
 
-$deleteOldStmt = $pdo->prepare('DELETE FROM server_stats WHERE server_id = :server_id AND fetched_at < (NOW() - INTERVAL 7 DAY)');
+$deleteOldStmt = $pdo->prepare('DELETE FROM server_stats WHERE server_id = :server_id AND fetched_at < (NOW() - INTERVAL 1 HOUR)');
 
 foreach ($servers as $server) {
     $row = [
